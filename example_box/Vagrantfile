@@ -1,47 +1,3 @@
-vagrant-vmware-esxi plugin
-==========================
-This is a Vagrant plugin that adds a VMware ESXi provider support.  This allows Vagrant to control and provision VMs directly on an ESXi hypervisor without a need for vCenter or VShpere.   ESXi hypervisor is a free download from VMware! 
->https://www.vmware.com/go/get-free-esxi
-
-
-Features and Compatibility
---------------------------
-* Any of the vmware Box formats should be compatible.
-  * vmware_destop, vmware_fusion, vmware_workstation...
-* Will automatically download boxes from the web.
-* Will automatically upload the box to your ESXi host.
-* Automatic or manual VM names.
-  * Automatic VM names are "PREFIX-HOSTNAME-USERNAME-DIR".
-* Multi machine capable.
-* Supports adding your VM to a Resource Pools to partition CPU and memory usage from other VMs on your ESXi host.
-* suspend / resume
-* rsync, using built-in Vagrant synced folders.
-* Provision using built-in Vagrant provisioner.
-
-Requirements
-------------
-1. This plugin requires ovftool from VMware.  Download from VMware website.
->https://www.vmware.com/support/developer/ovf/
-1. You MUST enable ssh access on your ESXi hypervisor.
-  * Google 'How to enable ssh access on esxi'
-1. The boxes should have open-vm-tools or vmware-tools installed.
-
-Why this plugin?
-----------------
-Not everyone has vCenter / vSphere...  vCenter cost $$$.  ESXi is free!
-
-How to install
---------------
-```
-vagrant plugin install vagrant-vmware-esxi
-```
-How to configure
-----------------
-
-1. cd SOMEDIR
-1. `vagrant init`
-1. `vi Vagrantfile`  # setup access your ESXi host and to set some preferences.
-```ruby
 Vagrant.configure("2") do |config|
 
   #  Box, Select any box created for VMware that is compatible with
@@ -50,7 +6,7 @@ Vagrant.configure("2") do |config|
   #    https://www.vmware.com/support/developer/ovf/
   #
   #    If your box is stuck at "Powered On", then most likely
-  #    the system didn't have the vmware tools installed.
+  #    the box didn't have the vmware tools / open-vm-tools installed.
   #
   # Here are some of the MANY examples....
   config.vm.box = 'hashicorp/precise64'
@@ -66,7 +22,7 @@ Vagrant.configure("2") do |config|
   #
   #  Provider (esxi) settings
   #
-  config.vm.provider :esxi do |esxi|
+  config.vm.provider :vmware_esxi do |esxi|
 
     #  REQUIRED!  ESXi hostname/IP
     #    You MUST specify a esxi_hostname or IP, uless you
@@ -151,25 +107,3 @@ Vagrant.configure("2") do |config|
 
   end
 end
-```
-
-Basic usage
------------
-1. `vagrant up --provider=vmware_esxi`
-1. To access the VM, use `vagrant ssh`
-1. To destroy the VM, use `vagrant destroy`
-1. Some other fun stuff you can do.
-  * `vagrant status`
-  * `vagrant suspend`
-  * `vagrant resume`
-  * `vagrant halt`
-  * `vagrant provision`
-
-
-Known issues
-------------
-* Built-in Vagrant synced folders using NFS is not yet supported.
-* Multi machines may not provision one VM if the boxes are different.
-  * I found this seems to be a problem with libvirt also, so I'm assuming it's a vagrant problem...
-* Cleanup doesn't always destroy a VM that has been partially built.  Use the allow_overwrite = 'True' option if you need to force a rebuild.
-* ovftool for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.

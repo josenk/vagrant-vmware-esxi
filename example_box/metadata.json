@@ -1,4 +1,4 @@
 
 {
-    "provider": "vmware-esxi"
+    "provider": "vmware_esxi"
 }
