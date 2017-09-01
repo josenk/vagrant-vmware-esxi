@@ -1,0 +1,65 @@
+en:
+  vagrant_vmware_esxi:
+    support: |-
+      -----------------------:----------------------
+      Please support my work and efforts contributing
+      to the Linux community.  A $25 payment per
+      server would be highly appreciated.
+      -----------------------:----------------------
+      Author                 : Jonathan Senkerik
+      Website                : http://www.jintegrate.co
+      github                 : http://github.com/josenk/vagrant-vmware-esxi
+      Paypal                 : josenk@jintegrate.co
+      Bitcoin                : 1MTNg7SqcEWs5uwLKwNiAfYqBfnKFJu65p
+    errors:
+      esxi_error: |-
+        There was an error talking to ESXi.
+          %{message}
+      esxi_config_error: |-
+        There was an ESXi configuration error.
+          %{message}
+    vagrant_vmware_esxi_message: |-
+      --- %{message}
+    vmbuild_not_done: |-
+      Virtual Machine will be built.
+    vmbuild_already_done: |-
+      Virtual Machine is already built.
+    already_powered_on: |-
+      The VM is already powered_on.
+    already_powered_off: |-
+      The VM is already powered_off.
+    already_suspended: |-
+      The VM is already suspended.
+    already_destroyed: |-
+      The VM is destroyed.
+    config:
+      esxi_hostname_is_required: |-
+        hostname is required
+      esxi_username_is_required: |-
+        username is required
+    states:
+      running:
+        short: |-
+          running
+        long: |-
+          The virtual machine is running.
+      powered_on:
+        short: |-
+          powered on
+        long: |-
+          The virtual machine is powered on.
+      powered_off:
+        short: |-
+          powered off
+        long: |-
+          The virtual machine is powered off.
+      suspended:
+        short: |-
+          suspended
+        long: |-
+          The virtual machine is suspended.
+      not_created:
+        short: |-
+          not created
+        long: |-
+          No Virtual Machines are created.
