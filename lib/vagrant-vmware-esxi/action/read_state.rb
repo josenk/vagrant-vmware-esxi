@@ -1,4 +1,6 @@
 require 'log4r'
+require 'net/ssh/simple'
+require 'socket'
 
 module VagrantPlugins
   module ESXi
@@ -13,6 +15,17 @@ module VagrantPlugins
 
         def call(env)
           env[:machine_state] = read_state(env)
+
+          #  Do NFS stuff
+          if env[:machine_state].to_s.include? "running"
+            ssh_info = env[:machine].ssh_info
+            if defined?(ssh_info[:host])
+              env[:nfs_machine_ip] = [ssh_info[:host]]
+              env[:nfs_host_ip] = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+              env[:nfs_valid_ids] = [env[:machine].id]
+            end
+          end
+
           @app.call(env)
         end
 
@@ -22,6 +35,7 @@ module VagrantPlugins
           # Get config.
           machine = env[:machine]
           config = env[:machine].provider_config
+
 
           return :not_created if machine.id.to_i < 1
 

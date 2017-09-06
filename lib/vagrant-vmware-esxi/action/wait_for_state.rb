@@ -1,5 +1,6 @@
 require 'log4r'
 require 'timeout'
+require 'net/ssh/simple'
 
 module VagrantPlugins
   module ESXi

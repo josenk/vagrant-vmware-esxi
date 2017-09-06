@@ -18,8 +18,18 @@ module VagrantPlugins
         setup_logging
         setup_i18n
 
-        require_relative 'provider'
+      require_relative 'provider'
         Provider
+      end
+
+      provider_capability('vmware_esxi', 'snapshot_list') do
+        require_relative 'cap/snapshot_list'
+        Cap::SnapshotList
+      end
+
+      command('snapshot-info') do
+        require_relative "command"
+        SnapshotInfo
       end
 
       # This initializes the internationalization strings.

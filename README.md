@@ -1,21 +1,22 @@
 vagrant-vmware-esxi plugin
 ==========================
-This is a Vagrant plugin that adds a VMware ESXi provider support.  This allows Vagrant to control and provision VMs directly on an ESXi hypervisor without a need for vCenter or VShpere.   ESXi hypervisor is a free download from VMware! 
+This is a Vagrant plugin that adds a VMware ESXi provider support.  This allows Vagrant to control and provision VMs directly on an ESXi hypervisor without a need for vCenter or VShpere.   ESXi hypervisor is a free download from VMware!
 >https://www.vmware.com/go/get-free-esxi
 
 
 Features and Compatibility
 --------------------------
 * Any of the vmware Box formats should be compatible.
-  * vmware_destop, vmware_fusion, vmware_workstation...
+  * vmware_desktop, vmware_fusion, vmware_workstation...
 * Will automatically download boxes from the web.
 * Will automatically upload the box to your ESXi host.
 * Automatic or manual VM names.
   * Automatic VM names are "PREFIX-HOSTNAME-USERNAME-DIR".
 * Multi machine capable.
-* Supports adding your VM to a Resource Pools to partition CPU and memory usage from other VMs on your ESXi host.
-* suspend / resume
-* rsync, using built-in Vagrant synced folders.
+* Supports adding your VM to Resource Pools to partition CPU and memory usage from other VMs on your ESXi host.
+* suspend / resume.
+* snapshots.
+* rsync & NFS using built-in Vagrant synced folders.
 * Provision using built-in Vagrant provisioner.
 
 Requirements
@@ -60,13 +61,13 @@ Vagrant.configure("2") do |config|
   #config.vm.box = 'centos/7'
   #config.vm.box = 'bento/ubuntu-14.04'
 
-  #  Currently this tool supports rsync ONLY.   NFS is not working yet
+  #  Supports type rsync and NFS.
   config.vm.synced_folder('.', '/Vagrantfiles', type: 'rsync')
 
   #
   #  Provider (esxi) settings
   #
-  config.vm.provider :esxi do |esxi|
+  config.vm.provider :vmware_esxi do |esxi|
 
     #  REQUIRED!  ESXi hostname/IP
     #    You MUST specify a esxi_hostname or IP, uless you
@@ -81,10 +82,10 @@ Vagrant.configure("2") do |config|
     #  A NOTE about esxi_password / ssh keys!!
     #
     #    If you don't specify a password and do not use ssh
-    #    keys, you wil; be entering your esxi password A LOT!
+    #    keys, you will be entering your esxi password A LOT!
     #
     #    From your command line, you should be able to run
-    #    following command without erros and be able to get to
+    #    following command without an error and be able to get to
     #    the esxi command prompt.
     #
     #      $ ssh root@ESXi_IP_ADDRESS
@@ -111,14 +112,14 @@ Vagrant.configure("2") do |config|
     esxi.virtual_network = "vmnet_example"
 
     #  OPTIONAL.  Specify a Disk Store
-    #    Default is to use the least used Disk Store.
+    #    The Default is to use the least used Disk Store.
     #esxi.vm_disk_store = "DS_001"
 
     #  OPTIONAL.  Guest VM name to be created/used.
     #    The Default will be automatically generated
     #    and will be based on the vmname_prefix,
     #    hostname, username, path...
-    #esxi.vmname = "Custome_Guest_VM_Name"
+    #esxi.vmname = "Custom-Guest-VM_Name"
 
     #  OPTIONAL.  When automatically naming VMs, use
     #    this prifix.
@@ -146,7 +147,7 @@ Vagrant.configure("2") do |config|
     #    Set this to 'True' will overwrite existing VMs (with the same name)
     #    when you run vagrant up.   ie,  if the vmname already exists,
     #    it will be destroyed, then over written...  This is helpful
-    #    if you have a VM that vagrant lost control (lost association).
+    #    if you have a VM that became an orphan (vagrant lost association).
     #esxi.allow_overwrite = 'True'
 
   end
@@ -162,14 +163,18 @@ Basic usage
   * `vagrant status`
   * `vagrant suspend`
   * `vagrant resume`
+  * `vagrant snapshot push`
+  * `vagrant snapshot list`
+  * `vagrant snapshot pop`  
   * `vagrant halt`
   * `vagrant provision`
 
 
-Known issues
-------------
-* Built-in Vagrant synced folders using NFS is not yet supported.
-* Multi machines may not provision one VM if the boxes are different.
-  * I found this seems to be a problem with libvirt also, so I'm assuming it's a vagrant problem...
+Known issues with vmware_esxi
+-----------------------------
 * Cleanup doesn't always destroy a VM that has been partially built.  Use the allow_overwrite = 'True' option if you need to force a rebuild.
 * ovftool for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
+* Built-in Vagrant synced folders using NFS fails if you try to re-provision.
+  * In general I find NFS synced folders pretty "flakey" anyways...
+* Multi machines may not provision one VM if the boxes are different.
+  * I found this problem with libvirt also, so I'm assuming it's a vagrant problem...

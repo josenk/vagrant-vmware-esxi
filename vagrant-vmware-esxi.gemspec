@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'i18n', '~> 0.6'
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
+  s.add_runtime_dependency "nokogiri", '> 1.5'
   s.add_runtime_dependency "net-ssh-simple", '> 1.5'
 
   s.add_development_dependency "bundler"

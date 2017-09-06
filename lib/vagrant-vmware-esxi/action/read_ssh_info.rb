@@ -1,4 +1,5 @@
 require 'log4r'
+require 'net/ssh/simple'
 
 module VagrantPlugins
   module ESXi

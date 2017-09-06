@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
   #    https://www.vmware.com/support/developer/ovf/
   #
   #    If your box is stuck at "Powered On", then most likely
-  #    the box didn't have the vmware tools / open-vm-tools installed.
+  #    the system didn't have the vmware tools installed.
   #
   # Here are some of the MANY examples....
   config.vm.box = 'hashicorp/precise64'
@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
   #config.vm.box = 'centos/7'
   #config.vm.box = 'bento/ubuntu-14.04'
 
-  #  Currently this tool supports rsync ONLY.   NFS is not working yet
+  #  Supports type rsync and NFS.
   config.vm.synced_folder('.', '/Vagrantfiles', type: 'rsync')
 
   #
@@ -37,10 +37,10 @@ Vagrant.configure("2") do |config|
     #  A NOTE about esxi_password / ssh keys!!
     #
     #    If you don't specify a password and do not use ssh
-    #    keys, you wil; be entering your esxi password A LOT!
+    #    keys, you will be entering your esxi password A LOT!
     #
     #    From your command line, you should be able to run
-    #    following command without erros and be able to get to
+    #    following command without an error and be able to get to
     #    the esxi command prompt.
     #
     #      $ ssh root@ESXi_IP_ADDRESS
@@ -67,14 +67,14 @@ Vagrant.configure("2") do |config|
     esxi.virtual_network = "vmnet_example"
 
     #  OPTIONAL.  Specify a Disk Store
-    #    Default is to use the least used Disk Store.
+    #    The Default is to use the least used Disk Store.
     #esxi.vm_disk_store = "DS_001"
 
     #  OPTIONAL.  Guest VM name to be created/used.
     #    The Default will be automatically generated
     #    and will be based on the vmname_prefix,
     #    hostname, username, path...
-    #esxi.vmname = "Custome_Guest_VM_Name"
+    #esxi.vmname = "Custom-Guest-VM_Name"
 
     #  OPTIONAL.  When automatically naming VMs, use
     #    this prifix.
@@ -102,7 +102,7 @@ Vagrant.configure("2") do |config|
     #    Set this to 'True' will overwrite existing VMs (with the same name)
     #    when you run vagrant up.   ie,  if the vmname already exists,
     #    it will be destroyed, then over written...  This is helpful
-    #    if you have a VM that vagrant lost control (lost association).
+    #    if you have a VM that became an orphan (vagrant lost association).
     #esxi.allow_overwrite = 'True'
 
   end

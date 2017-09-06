@@ -21,7 +21,7 @@ module VagrantPlugins
       end
 
       def state
-        @machine.action('connect_esxi')
+        #@machine.action('connect_esxi')
         env = @machine.action('read_state')
         state_id = env[:machine_state]
 

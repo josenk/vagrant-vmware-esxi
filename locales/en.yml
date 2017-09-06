@@ -32,6 +32,12 @@ en:
       The VM is already suspended.
     already_destroyed: |-
       The VM is destroyed.
+    snapshot_saved: |-
+      The snapshot has been saved.
+    snapshot_deleted: |-
+      The snapshot has been deleted.
+    snapshot_restored: |-
+      The snapshot has been restored.
     config:
       esxi_hostname_is_required: |-
         hostname is required

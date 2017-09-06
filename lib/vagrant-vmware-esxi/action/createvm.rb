@@ -33,12 +33,12 @@ module VagrantPlugins
 
           # Set guestvm_vmname
           if !env[:machine].config.vm.hostname.nil?
-            # A hostname has been set, so use it.  (multi node)
+            # A hostname has been set, so use it.
             guestvm_vmname = env[:machine].config.vm.hostname
           elsif config.vmname.nil?
             #  Nothing set, so generate our own
-            guestvm_vmname = config.vmname_prefix
-            guestvm_vmname << `hostname`.strip
+            guestvm_vmname = config.vmname_prefix.strip
+            guestvm_vmname << `hostname`.partition('.').first.strip
             guestvm_vmname << '-'
             guestvm_vmname << `whoami`.gsub!(/[^0-9A-Za-z]/, '').strip
             guestvm_vmname << '-'
