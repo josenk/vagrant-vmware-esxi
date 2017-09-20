@@ -18,6 +18,12 @@ en:
       esxi_config_error: |-
         There was an ESXi configuration error.
           %{message}
+      esxi_ovftool_error: |-
+        There was an OVF Tool error.
+          %{message}
+      general_error: |-
+        There was an error.
+          %{message}
     vagrant_vmware_esxi_message: |-
       --- %{message}
     vmbuild_not_done: |-

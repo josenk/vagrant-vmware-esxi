@@ -147,6 +147,13 @@ module VagrantPlugins
         end
       end
 
+      def self.action_package
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use ReadState
+          b.use Package
+        end
+      end
+
       action_root = Pathname.new(File.expand_path('../action', __FILE__))
       autoload :ConnectESXi, action_root.join('connect_esxi')
       autoload :CreateVM, action_root.join('createvm')
@@ -157,6 +164,7 @@ module VagrantPlugins
       autoload :Destroy, action_root.join('destroy')
       autoload :Suspend, action_root.join('suspend')
       autoload :Resume, action_root.join('resume')
+      autoload :Package, action_root.join('package')
       autoload :SnapshotInfo, action_root.join('snapshot_info')
       autoload :SnapshotList, action_root.join('snapshot_list')
       autoload :SnapshotSave, action_root.join('snapshot_save')

@@ -261,7 +261,7 @@ module VagrantPlugins
             # Using ovftool, import vmx in box folder, export to ESXi server
             #
             unless system 'ovftool --version'
-              raise Errors::ESXiConfigError,
+              raise Errors::OVFToolError,
                     message: 'ovftool not found or not in your path.'\
                              "  Please download and "\
                              '  install from http://www.vmware.com.'
@@ -276,7 +276,7 @@ module VagrantPlugins
             #  Security bug if unremarked! Password will be exposed in log file.
             #  @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
             unless system "#{ovf_cmd}"
-              raise Errors::ESXiConfigError, message: 'Error with ovftool...'
+              raise Errors::OVFToolError, message: ''
             end
 
             # VMX file is not needed any longer

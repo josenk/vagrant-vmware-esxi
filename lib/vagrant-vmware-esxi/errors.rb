@@ -17,6 +17,15 @@ module VagrantPlugins
       class ESXiConfigError < VagrantESXiErrors
         error_key(:esxi_config_error)
       end
+
+      # Error class
+      class OVFToolError < VagrantESXiErrors
+        error_key(:esxi_ovftool_error)
+      end
+      # Error class
+      class GeneralError < VagrantESXiErrors
+        error_key(:general_error)
+      end
     end
   end
 end
