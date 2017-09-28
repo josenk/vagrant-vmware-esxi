@@ -76,10 +76,14 @@ module VagrantPlugins
             #
             #  Figure out DataStore
             r = ssh config.esxi_hostname,
-                    'esxcli storage filesystem list | '\
-                    'grep "/vmfs/volumes/.*true  VMFS" | sort -nk7'
+                    'df | grep "^[VMFS|NFS]" | sort -nk4 |'\
+                    'sed "s|.*/vmfs/volumes/||g" | tail +2'
 
-            availvolumes = r.stdout.dup
+            availvolumes = r.stdout.dup.split(/\n/)
+            if (config.debug =~ %r{true}i) ||
+               (config.debug =~ %r{yes}i)
+               puts "Available DS Volumes: #{availvolumes}"
+            end
             if (r == '') || (r.exit_code != 0)
               raise Errors::ESXiError,
                     message: 'Unable to get list of Disk Stores:'
@@ -92,26 +96,20 @@ module VagrantPlugins
               desired_ds = config.vm_disk_store.to_s
             end
 
-            for line in availvolumes.each_line do
-              if line =~ %r{ #{desired_ds} }
-                guestvm_ds = line.split(' ')[0].to_s
-                guestvm_dsname = line.split(' ')[1]
-                break
-              end
-              guestvm_ds = line.split(' ')[0].to_s
-              guestvm_dsname = line.split(' ')[1]
+            if availvolumes.include? desired_ds
+              guestvm_dsname = desired_ds
+            else
+              guestvm_dsname = availvolumes.last
             end
 
             if (guestvm_dsname != desired_ds) &&
                !config.vm_disk_store.nil?
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: 'WARNING       : '\
+                                   message: 'WARNING         : '\
                                             "#{config.vm_disk_store} not "\
-                                            "found, using #{guestvm_dsname}.")
+                                            "found, using #{guestvm_dsname}")
             end
 
-            dst_dir = "#{guestvm_ds}/#{guestvm_vmname}"
-            @logger.info("vagrant-vmware-esxi, createvm: dst_dir: #{dst_dir}")
             @logger.info('vagrant-vmware-esxi, createvm: '\
                          "guestvm_dsname: #{guestvm_dsname}")
 
@@ -122,27 +120,39 @@ module VagrantPlugins
                     'esxcli network vswitch standard list |'\
                     'grep Portgroups | sed "s/^   Portgroups: //g" |'\
                     'sed "s/,.*$//g"'
-            availnetworks = r.stdout.dup
+            availnetworks = r.stdout.dup.split(/\n/)
+            if (config.debug =~ %r{true}i) ||
+               (config.debug =~ %r{yes}i)
+               puts "Available Networks: #{availnetworks}"
+            end
             if (availnetworks == '') || (r.exit_code != 0)
               raise Errors::ESXiError,
                     message: "Unable to get list of Virtual Networks:\n"\
                              "#{r.stderr}"
             end
 
-            guestvm_network = nil
-            availnetworkslist = availnetworks.dup
-            for line in availnetworks.each_line do
-              if line =~ %r{#{config.virtual_network}}
-                guestvm_network = config.virtual_network
+            if config.virtual_network.nil?
+              guestvm_network = availnetworks.first
+            elsif availnetworks.include? config.virtual_network
+              guestvm_network = config.virtual_network
+            else
+              guestvm_network = availnetworks.first
+            end
+
+            if guestvm_network != config.virtual_network
+              if config.virtual_network.nil?
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'WARNING         : '\
+                                              "config.virtual_network not "\
+                                              "set, using #{availnetworks.first}")
+              else
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'WARNING         : '\
+                                              "#{config.virtual_network} not "\
+                                              "found, using #{availnetworks.first}")
               end
             end
 
-            if guestvm_network.nil?
-              raise Errors::ESXiConfigError,
-                    message: "You MUST specify a valid virtual network.\n"\
-                             "virtual_network (#{config.virtual_network}).\n"\
-                             "Available Virtual Networks:\n#{availnetworkslist}"
-            end
             @logger.info('vagrant-vmware-esxi, createvm: '\
                          "virtual_network: #{guestvm_network}")
 
@@ -275,6 +285,10 @@ module VagrantPlugins
 
             #  Security bug if unremarked! Password will be exposed in log file.
             #  @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
+            if (config.debug =~ %r{true}i) ||
+               (config.debug =~ %r{yes}i)
+               puts "ovftool command: #{ovf_cmd}"
+            end
             unless system "#{ovf_cmd}"
               raise Errors::OVFToolError, message: ''
             end

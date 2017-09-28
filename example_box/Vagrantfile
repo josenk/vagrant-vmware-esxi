@@ -64,9 +64,9 @@ Vagrant.configure("2") do |config|
     #    Default port 22
     #esxi.esxi_hostport = 22
 
-    #  REQUIRED!  Virtual Network
-    #    You MUST specify a Virtual Network!
-    #    The default is fail if no Virtual Network is set!
+    #  HIGHLY RECOMMENDED!  Virtual Network
+    #    You should specify a Virtual Network!
+    #    The default is to use the first found!
     esxi.virtual_network = "vmnet_example"
 
     #  OPTIONAL.  Specify a Disk Store

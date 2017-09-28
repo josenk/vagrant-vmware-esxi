@@ -20,6 +20,7 @@ module VagrantPlugins
       attr_accessor :numvcpus
       attr_accessor :custom_vmx_settings
       attr_accessor :allow_overwrite
+      attr_accessor :debug
       attr_accessor :system_private_keys_path
       def initialize
         @esxi_hostname = nil
@@ -38,6 +39,7 @@ module VagrantPlugins
         @numvcpus = UNSET_VALUE
         @custom_vmx_settings = UNSET_VALUE
         @allow_overwrite = 'False'
+        @debug = 'False'
         @system_private_keys_path = [
           '~/.ssh/id_rsa',
           '~/.ssh/id_ecdsa',
