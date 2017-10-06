@@ -28,8 +28,12 @@ module VagrantPlugins
                 until env[:machine].state.id == @state
                   sleep 4
                 end
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "Success, state is now \"#{@state}\"")
               end
             rescue Timeout::Error
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: "Failed, timeout waiting for \"#{@state}\"")
               env[:result] = 'False' # couldn't reach state in time
             end
           end

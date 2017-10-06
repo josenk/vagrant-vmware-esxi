@@ -8,6 +8,7 @@ Features and Compatibility
 --------------------------
 * Any of the vmware Box formats should be compatible.
   * vmware_desktop, vmware_fusion, vmware_workstation...
+  * To be fully functional, you must have open-vm-tools or vmware tools installed
 * Will automatically download boxes from the web.
 * Will automatically upload the box to your ESXi host.
 * Automatic or manual VM names.
@@ -26,7 +27,7 @@ Requirements
 >https://www.vmware.com/support/developer/ovf/
 1. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
-1. The boxes should have open-vm-tools or vmware-tools installed.
+1. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
 
 Why this plugin?
 ----------------
@@ -59,8 +60,8 @@ Vagrant.configure("2") do |config|
   #config.vm.box = 'steveant/CentOS-7.0-1406-Minimal-x64'
   #config.vm.box = 'geerlingguy/ubuntu1604'
   #config.vm.box = 'laravel/homestead'
-  #config.vm.box = 'centos/7'
   #config.vm.box = 'bento/ubuntu-14.04'
+  #config.vm.box = 'generic/centos7'
   #config.vm.box = 'generic/fedora26'
   #config.vm.box = 'generic/alpine36'
 
@@ -177,6 +178,7 @@ Basic usage
 
 Known issues with vmware_esxi
 -----------------------------
+* The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
 * Cleanup doesn't always destroy a VM that has been partially built.  Use the allow_overwrite = 'True' option if you need to force a rebuild.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 * Built-in Vagrant synced folders using NFS fails if you try to re-provision.
