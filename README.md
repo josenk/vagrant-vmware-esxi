@@ -25,9 +25,9 @@ Requirements
 ------------
 1. This plugin requires ovftool from VMware.  Download from VMware website.
 >https://www.vmware.com/support/developer/ovf/
-1. You MUST enable ssh access on your ESXi hypervisor.
+2. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
-1. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
+3. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
 
 Why this plugin?
 ----------------

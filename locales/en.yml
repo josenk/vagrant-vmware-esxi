@@ -10,7 +10,7 @@ en:
       Website                : http://www.jintegrate.co
       github                 : http://github.com/josenk/vagrant-vmware-esxi
       Paypal                 : josenk@jintegrate.co
-      Bitcoin                : 1MTNg7SqcEWs5uwLKwNiAfYqBfnKFJu65p
+      Bitcoin                : 1HCTVkmSXepQahJfvuxQRhUMem1HpHq3Mq
     errors:
       esxi_error: |-
         There was an error talking to ESXi.
