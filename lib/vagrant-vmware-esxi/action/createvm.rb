@@ -119,7 +119,7 @@ module VagrantPlugins
             r = ssh config.esxi_hostname,
                     'esxcli network vswitch standard list |'\
                     'grep Portgroups | sed "s/^   Portgroups: //g" |'\
-                    'sed "s/,.*$//g"'
+                    'sed "s/,./\n/g"'
             availnetworks = r.stdout.dup.split(/\n/)
             if (config.debug =~ %r{true}i) ||
                (config.debug =~ %r{yes}i)
