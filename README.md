@@ -185,3 +185,9 @@ Known issues with vmware_esxi
   * In general I find NFS synced folders pretty "flakey" anyways...
 * Multi machines may not provision one VM if the boxes are different.
   * I found this problem with libvirt also, so I'm assuming it's a vagrant problem...
+
+
+Feedback please!
+----------------
+* To help improve this plugin, I'm requesting that you provide some feedback.
+* https://goo.gl/forms/tY14mE77HJvhNvjj1
