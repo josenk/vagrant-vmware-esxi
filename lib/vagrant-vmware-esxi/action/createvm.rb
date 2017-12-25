@@ -131,25 +131,30 @@ module VagrantPlugins
                              "#{r.stderr}"
             end
 
+            guestvm_network = []
+            counter = 0
             if config.virtual_network.nil?
-              guestvm_network = availnetworks.first
-            elsif availnetworks.include? config.virtual_network
-              guestvm_network = config.virtual_network
+              guestvm_network[0] = availnetworks.first
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                    message: 'WARNING         : '\
+                                             "config.virtual_network not "\
+                                             "set, using #{availnetworks.first}")
             else
-              guestvm_network = availnetworks.first
-            end
-
-            if guestvm_network != config.virtual_network
-              if config.virtual_network.nil?
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: 'WARNING         : '\
-                                              "config.virtual_network not "\
-                                              "set, using #{availnetworks.first}")
-              else
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: 'WARNING         : '\
-                                              "#{config.virtual_network} not "\
-                                              "found, using #{availnetworks.first}")
+              networkID = 0
+              for aVirtNet in Array(config.virtual_network) do
+                if availnetworks.include? aVirtNet
+                  guestvm_network << aVirtNet
+                else
+                  guestvm_network << availnetworks.first
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: 'WARNING         : '\
+                                                "#{aVirtNet} not "\
+                                                "found, using #{availnetworks.first}")
+                end
+                networkID += 1
+                if networkID >= 4
+                  break
+                end
               end
             end
 
@@ -176,14 +181,12 @@ module VagrantPlugins
                 new_vmx_contents << "memsize = \"#{desired_memsize}\"\n"
               elsif line.match(/^numvcpus =/i) && (!desired_numvcpus.nil?)
                 new_vmx_contents << "numvcpus = \"#{desired_numvcpus}\"\n"
-              elsif line.match(/^ethernet0.networkName =/i)
-                new_vmx_contents << "ethernet0.networkName = \"#{guestvm_network}\"\n"
-              elsif line.match(/^ethernet0.addressType =.*static/i)
-                new_vmx_contents << 'ethernet0.addressType = \"generated\"'
-              elsif line.match(/^ethernet[1-9]/i) ||
-                    line.match(/^ethernet0.address = /i) ||
-                    line.match(/^ethernet0.generatedAddress = /i) ||
-                    line.match(/^ethernet0.generatedAddressOffset = /i)
+              elsif line.match(/^ethernet[0-9].networkName =/i) ||
+                    line.match(/^ethernet[0-9].addressType =/i) ||
+                    line.match(/^ethernet[0-9].present =/i) ||
+                    line.match(/^ethernet[0-9].address =/i) ||
+                    line.match(/^ethernet[0-9].generatedAddress =/i) ||
+                    line.match(/^ethernet[0-9].generatedAddressOffset =/i)
                 # Do nothing, delete these lines
               else
                 new_vmx_contents << line
@@ -199,8 +202,24 @@ module VagrantPlugins
               end
             end
 
-            unless new_vmx_contents =~ %r{^ethernet0.networkName =}i
-              new_vmx_contents << "ethernet0.networkName = \"#{guestvm_network}\"\n"
+            #unless new_vmx_contents =~ %r{^ethernet0.networkName =}i
+            #  new_vmx_contents << "ethernet0.networkName = \"#{guestvm_network}\"\n"
+            #end
+            netOpts = ""
+            networkID = 0
+            for element in guestvm_network do
+              if (config.debug =~ %r{true}i) ||
+                 (config.debug =~ %r{yes}i)
+                puts "guestvm_network[#{networkID}]: #{element}"
+              end
+              new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
+              new_vmx_contents << "ethernet#{networkID}.present = \"TRUE\"\n"
+              new_vmx_contents << "ethernet#{networkID}.addressType = \"generated\"\n"
+              netOpts << " --net:\"net#{networkID}=#{element}\""
+              networkID += 1
+              if networkID >= 4
+                break
+              end
             end
 
             if config.custom_vmx_settings.is_a? Array
@@ -260,7 +279,7 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Disk Store      : #{guestvm_dsname}")
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "NetworkName     : \"#{guestvm_network}\"")
+                                 message: "NetworkName     : #{guestvm_network[0..3]}")
             unless overwrite_opts.nil?
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                    message: 'Allow Overwrite : True')
@@ -277,7 +296,7 @@ module VagrantPlugins
                              '  install from http://www.vmware.com.'
             end
             ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
-                  "-nw=\"#{guestvm_network}\" -dm=thin --powerOn "\
+                  "#{netOpts} -dm=thin --powerOn "\
                   "-ds=\"#{guestvm_dsname}\" --name=\"#{guestvm_vmname}\" "\
                   "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
                   "#{config.esxi_password}@#{config.esxi_hostname}"\

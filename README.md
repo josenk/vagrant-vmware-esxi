@@ -23,11 +23,12 @@ Features and Compatibility
 
 Requirements
 ------------
-1. This plugin requires ovftool from VMware.  Download from VMware website.
+1. This is a vagrant plugin, so you need vagrant installed...  :-)
+2. This plugin requires ovftool from VMware.  Download from VMware website.
 >https://www.vmware.com/support/developer/ovf/
-2. You MUST enable ssh access on your ESXi hypervisor.
+3. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
-3. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
+4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the "running" state.
 
 Why this plugin?
 ----------------
@@ -114,7 +115,11 @@ Vagrant.configure("2") do |config|
     #  HIGHLY RECOMMENDED!  Virtual Network
     #    You should specify a Virtual Network!
     #    The default is to use the first found!
-    esxi.virtual_network = "vmnet_example"
+    #    You can specify up to 4 virtual networks using an array
+    #    format.  Note that Vagrant only looks at the first 
+    #    interface for an IP address.
+    #esxi.virtual_network = "vmnet_example"
+    #esxi.virtual_network = ["vmnet1","vmnet2","vmnet3","vmnet4"]
 
     #  OPTIONAL.  Specify a Disk Store
     #    The Default is to use the least used Disk Store.
@@ -123,7 +128,8 @@ Vagrant.configure("2") do |config|
     #  OPTIONAL.  Guest VM name to be created/used.
     #    The Default will be automatically generated
     #    and will be based on the vmname_prefix,
-    #    hostname, username, path...
+    #    hostname, username, path.  Otherwise you
+    #    can set a fixed guest VM name here.
     #esxi.vmname = "Custom-Guest-VM_Name"
 
     #  OPTIONAL.  When automatically naming VMs, use
@@ -144,8 +150,9 @@ Vagrant.configure("2") do |config|
     #    The default is to create VMs in the "root".  You can
     #     specify a resource pool here to partition memory and
     #     cpu usage away from other systems on your esxi host.
-    #     The resource pool must already exist and be configured.
-    #     Vagrant will NOT create it for you.
+    #     The resource pool must already exist and have the
+    #     proper permissions set.
+    #     Vagrant will NOT create a Resource pool it for you.
     #esxi.resource_pool = "/Vagrant"
 
     #  DANGEROUS!  Allow Overwrite

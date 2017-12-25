@@ -67,7 +67,9 @@ Vagrant.configure("2") do |config|
     #  HIGHLY RECOMMENDED!  Virtual Network
     #    You should specify a Virtual Network!
     #    The default is to use the first found!
-    esxi.virtual_network = "vmnet_example"
+    #    You can specify up to 4 virtual networks using an array format.
+    #esxi.virtual_network = "vmnet_example"
+    #esxi.virtual_network = ["vmnet1","vmnet2","vmnet3","vmnet4"]
 
     #  OPTIONAL.  Specify a Disk Store
     #    The Default is to use the least used Disk Store.
