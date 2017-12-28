@@ -193,6 +193,19 @@ Known issues with vmware_esxi
 * Multi machines may not provision one VM if the boxes are different.
   * I found this problem with libvirt also, so I'm assuming it's a vagrant problem...
 
+Version History
+---------------
+* 1.2.1 Encode special characters in password.
+* 1.2.0 Add support for up to 4 virtual networks.
+* 1.7.1 Show all port groups for each virtual switch instead of just the first.
+* 1.1.6 Update documenation.
+* 1.1.5 Add more detailed information when waiting for state (running).
+* 1.1.4 Update documentation.
+* 1.1.3 Add support to create package.
+* 1.1.2 Fix, reload.
+* 1.1.1 Add support for NFS.
+* 1.1.0 Add support for snapshots.
+* 1.0.1 Init commit.
 
 Feedback please!
 ----------------

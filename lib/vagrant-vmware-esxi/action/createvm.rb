@@ -287,6 +287,20 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Resource Pool   : #{resource_pool}")
             #
+            #  Encode special characters in PW
+            #
+            encoded_esxi_password = config.esxi_password.gsub('@', '%40').gsub(\
+              '<', '%3c').gsub('>', '%3e').gsub(\
+              '[', '%5b').gsub(']', '%5d').gsub(\
+              '(', '%28').gsub(')', '%29').gsub(\
+              '%', '%25').gsub('#', '%23').gsub(\
+              '&', '%26').gsub(':', '%3a').gsub(\
+              '/', '%2f').gsub('\\','%5c').gsub(\
+              '"', '%22').gsub('\'','%27').gsub(\
+              '*', '%2a').gsub('?', '%3f')
+
+
+            #
             # Using ovftool, import vmx in box folder, export to ESXi server
             #
             unless system 'ovftool --version'
@@ -299,7 +313,7 @@ module VagrantPlugins
                   "#{netOpts} -dm=thin --powerOn "\
                   "-ds=\"#{guestvm_dsname}\" --name=\"#{guestvm_vmname}\" "\
                   "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
-                  "#{config.esxi_password}@#{config.esxi_hostname}"\
+                  "#{encoded_esxi_password}@#{config.esxi_hostname}"\
                   "#{resource_pool}"
 
             #  Security bug if unremarked! Password will be exposed in log file.
@@ -313,7 +327,12 @@ module VagrantPlugins
             end
 
             # VMX file is not needed any longer
-            File.delete(new_vmx_file)
+            if (config.debug =~ %r{true}i) ||
+               (config.debug =~ %r{yes}i)
+               puts "Keeping file: #{new_vmx_file}"
+             else
+               File.delete(new_vmx_file)
+             end
 
             r = ssh config.esxi_hostname,
                     'vim-cmd vmsvc/getallvms |'\
