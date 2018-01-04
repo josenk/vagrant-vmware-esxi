@@ -1,5 +1,5 @@
 require 'log4r'
-require 'net/ssh/simple'
+require 'net/ssh'
 
 module VagrantPlugins
   module ESXi
@@ -31,23 +31,25 @@ module VagrantPlugins
                                 message: 'Cannot snapshot_info in this state')
           else
 
-            Net::SSH::Simple.sync(
-              user:     config.esxi_username,
-              password: config.esxi_password,
-              port:     config.esxi_hostport,
-              keys:     config.esxi_private_keys,
-            ) do
+            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+              password:                   $esxi_password,
+              port:                       config.esxi_hostport,
+              keys:                       config.esxi_private_keys,
+              timeout:                    10,
+              number_of_password_prompts: 0,
+              non_interactive:            true
+            ) do |ssh|
 
-              r = ssh config.esxi_hostname,
+              r = ssh.exec!(
                   "vim-cmd vmsvc/snapshot.get #{machine.id} 2>&1 | "\
                   "sed 's/Get Snapshot:/ /g' | "\
                   "grep -v "\
                   "-e 'Snapshot Id ' "\
                   "-e 'Snapshot Desciption ' "\
-                  "-e 'Snapshot State '"
+                  "-e 'Snapshot State '")
 
-              snapshotinfo = r.stdout
-              if r.exit_code != 0
+              snapshotinfo = r
+              if r.exitstatus != 0
                 raise Errors::ESXiError,
                       message: "Unable to list snapshots:\n"\
                                "  #{allsnapshots}\n#{r.stderr}"

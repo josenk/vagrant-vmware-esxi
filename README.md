@@ -85,44 +85,69 @@ Vagrant.configure("2") do |config|
     esxi.esxi_username = "root"
 
     #
-    #  A NOTE about esxi_password / ssh keys!!
-    #
-    #    If you don't specify a password and do not use ssh
-    #    keys, you will be entering your esxi password A LOT!
-    #
-    #    From your command line, you should be able to run
-    #    following command without an error and be able to get to
-    #    the esxi command prompt.
-    #
-    #      $ ssh root@ESXi_IP_ADDRESS
-
     #  IMPORTANT!  ESXi password.
-    #    The ssh connections to esxi will try your ssh
-    #    keys first.  However the ovftool does NOT!  To make
-    #    vagrant up fully password-less, you will need to
-    #    enter your password here....
-    esxi.esxi_password = nil
+    #  *** NOTES about esxi_password & ssh keys!! ***
+    #
+    #    1) "prompt:"
+    #       This will prompt you for the esxi password each time you
+    #       run a vagrant command.  This is the default.
+    #
+    #    2) "file:"  or  "file:my_secret_file"
+    #       This will read a plain text file containing the esxi
+    #       password.   The default filename is ~/.esxi_password, or
+    #       you can specify any filename after the colon ":".
+    #
+    #    3) "env:"  or "env:my_secret_env_var"
+    #        This will read the esxi password via a environment
+    #        variable.  The default is $esxi_password, but you can
+    #        specify any environment variable after the colon ":".
+    #
+    #            $ export esxi_password="my_secret_password"
+    #
+    #    4)  "key:"  or  key:~/.ssh/some_ssh_private_key"
+    #        Use ssh keys.  The default is to use the system private keys,
+    #        or you specify a custom private key after the colon ":".
+    #
+    #        To test connectivity. From your command line, you should be able to
+    #        run following command without an error and get an esxi prompt.
+    #
+    #            $ ssh root@ESXi_IP_ADDRESS
+    #
+    #        The ssh connections to esxi will try the ssh private
+    #        keys.  However the ovftool does NOT!  To make
+    #        vagrant fully password-less, you will need to use other
+    #        options. (set the passord, use "env:" or "file:")
+    #
+    #    5)  esxi.esxi_password = "my_esxi_password"
+    #        Enter your esxi passowrd in clear text here...  This is the
+    #        least secure method because you may share this Vagrant file without
+    #        realizing the password is in clear text.
+    #
+    #  IMPORTANT!  Set the ESXi password or authentication method..
+    esxi.esxi_password = "prompt:"
 
-    #  ESXi ssh keys
-    #    The Default is to use system defaults, However
+    #  ESXi ssh keys.   (This is depreciated!!!)
+    #    The Default is to use system default ssh keys, However
     #    you can specify an array of keys here...
+    #
+    #   ***  Depreciated, use esxi_password = "key:" instead. ***
     #esxi.esxi_private_keys = []
 
     #  SSH port.
-    #    Default port 22
+    #    Default port 22.
     #esxi.esxi_hostport = 22
 
     #  HIGHLY RECOMMENDED!  Virtual Network
-    #    You should specify a Virtual Network!
-    #    The default is to use the first found!
+    #    You should specify a Virtual Network!  If it's not specified, the
+    #    default is to use the first found.
     #    You can specify up to 4 virtual networks using an array
-    #    format.  Note that Vagrant only looks at the first 
-    #    interface for an IP address.
+    #    format.  Note that Vagrant only looks at the first
+    #    interface for a valid IP address.
     #esxi.virtual_network = "vmnet_example"
     #esxi.virtual_network = ["vmnet1","vmnet2","vmnet3","vmnet4"]
 
     #  OPTIONAL.  Specify a Disk Store
-    #    The Default is to use the least used Disk Store.
+    #    If it's not specified, the Default is to use the least used Disk Store.
     #esxi.vm_disk_store = "DS_001"
 
     #  OPTIONAL.  Guest VM name to be created/used.
@@ -142,20 +167,22 @@ Vagrant.configure("2") do |config|
     #esxi.memsize = "2048"
 
     #  OPTIONAL.  Virtual CPUs override
-    #    The default is to use the number of virt cpus specified
+    #    The default is to use the number of virtual cpus specified
     #     in the vmx file, however you can specify a new value here.
     #esxi.numvcpus = "2"
 
     #  OPTIONAL.  Resource Pool
-    #    The default is to create VMs in the "root".  You can
-    #     specify a resource pool here to partition memory and
-    #     cpu usage away from other systems on your esxi host.
-    #     The resource pool must already exist and have the
-    #     proper permissions set.
+    #    If unspecified, the default is to create VMs in the "root".  You can
+    #    specify a resource pool here to partition memory and cpu usage away
+    #    from other systems on your esxi host.  The resource pool must
+    #    already exist and have the proper permissions set.
+    #     
     #     Vagrant will NOT create a Resource pool it for you.
     #esxi.resource_pool = "/Vagrant"
 
     #  DANGEROUS!  Allow Overwrite
+    #    If unspecified, the default is to produce an error if overwriting
+    #    vm's and packages.
     #    Set this to 'True' will overwrite existing VMs (with the same name)
     #    when you run vagrant up.   ie,  if the vmname already exists,
     #    it will be destroyed, then over written...  This is helpful
@@ -178,6 +205,7 @@ Basic usage
   * `vagrant resume`
   * `vagrant snapshot push`
   * `vagrant snapshot list`
+  * `vagrant snapshot-info`
   * `vagrant snapshot pop`  
   * `vagrant halt`
   * `vagrant provision`
@@ -189,12 +217,13 @@ Known issues with vmware_esxi
 * Cleanup doesn't always destroy a VM that has been partially built.  Use the allow_overwrite = 'True' option if you need to force a rebuild.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 * Built-in Vagrant synced folders using NFS fails if you try to re-provision.
-  * In general I find NFS synced folders pretty "flakey" anyways...
+  * In general I find NFS synced folders pretty "flaky" anyways...
 * Multi machines may not provision one VM if the boxes are different.
   * I found this problem with libvirt also, so I'm assuming it's a vagrant problem...
 
 Version History
 ---------------
+* 1.3.0 Add support to get esxi password from env, from a file or prompt.
 * 1.2.1 Encode special characters in password.
 * 1.2.0 Add support for up to 4 virtual networks.
 * 1.7.1 Show all port groups for each virtual switch instead of just the first.

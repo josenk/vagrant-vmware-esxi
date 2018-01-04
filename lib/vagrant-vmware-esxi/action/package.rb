@@ -1,11 +1,10 @@
 require 'log4r'
-require 'net/ssh/simple'
 require 'fileutils'
 
 module VagrantPlugins
   module ESXi
     module Action
-      # This action will save (create) a new snapshot
+      # This action will package a VM.
       class Package
         def initialize(app, env)
           @app    = app
@@ -95,7 +94,7 @@ module VagrantPlugins
 
             ovf_cmd = "ovftool --noSSLVerify -tt=VMX --name=\"#{boxname}\" "\
                       "#{overwrite_opts} vi://#{config.esxi_username}:"\
-                      "#{config.esxi_password}@#{config.esxi_hostname}"\
+                      "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
                       "?moref=vim.VirtualMachine:#{machine.id} #{tmpdir}"
 
             unless system "#{ovf_cmd}"

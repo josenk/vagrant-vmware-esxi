@@ -1,11 +1,11 @@
 require 'log4r'
-require 'net/ssh/simple'
+require 'net/ssh'
 
 module VagrantPlugins
   module ESXi
     module Action
-      # This action connects to the ESXi, verifies credentials and
-      # validates if it's a ESXi host
+      # This action creates a new vmx file (using overwrides from config file),
+      # then creates a new VM guest using ovftool.
       class CreateVM
         def initialize(app, _env)
           @app    = app
@@ -64,27 +64,28 @@ module VagrantPlugins
           #
           #  Open the network connection
           #
-          Net::SSH::Simple.sync(
-            user:     config.esxi_username,
-            password: config.esxi_password,
-            port:     config.esxi_hostport,
-            keys:     config.esxi_private_keys
-          ) do
+          Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            password:                   $esxi_password,
+            port:                       config.esxi_hostport,
+            keys:                       config.esxi_private_keys,
+            timeout:                    10,
+            number_of_password_prompts: 0,
+            non_interactive:            true
+          ) do |ssh|
 
             @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::createvm-ssh')
 
             #
             #  Figure out DataStore
-            r = ssh config.esxi_hostname,
+            r = ssh.exec!(
                     'df | grep "^[VMFS|NFS]" | sort -nk4 |'\
-                    'sed "s|.*/vmfs/volumes/||g" | tail +2'
+                    'sed "s|.*/vmfs/volumes/||g" | tail +2')
 
-            availvolumes = r.stdout.dup.split(/\n/)
-            if (config.debug =~ %r{true}i) ||
-               (config.debug =~ %r{yes}i)
+            availvolumes = r.split(/\n/)
+            if (config.debug =~ %r{true}i)
                puts "Available DS Volumes: #{availvolumes}"
             end
-            if (r == '') || (r.exit_code != 0)
+            if (r == '') || (r.exitstatus != 0)
               raise Errors::ESXiError,
                     message: 'Unable to get list of Disk Stores:'
             end
@@ -116,16 +117,15 @@ module VagrantPlugins
             #
             #  Figure out network
             #
-            r = ssh config.esxi_hostname,
+            r = ssh.exec!(
                     'esxcli network vswitch standard list |'\
                     'grep Portgroups | sed "s/^   Portgroups: //g" |'\
-                    'sed "s/,./\n/g"'
-            availnetworks = r.stdout.dup.split(/\n/)
-            if (config.debug =~ %r{true}i) ||
-               (config.debug =~ %r{yes}i)
+                    'sed "s/,./\n/g"')
+            availnetworks = r.split(/\n/)
+            if (config.debug =~ %r{true}i)
                puts "Available Networks: #{availnetworks}"
             end
-            if (availnetworks == '') || (r.exit_code != 0)
+            if (availnetworks == '') || (r.exitstatus != 0)
               raise Errors::ESXiError,
                     message: "Unable to get list of Virtual Networks:\n"\
                              "#{r.stderr}"
@@ -202,14 +202,11 @@ module VagrantPlugins
               end
             end
 
-            #unless new_vmx_contents =~ %r{^ethernet0.networkName =}i
-            #  new_vmx_contents << "ethernet0.networkName = \"#{guestvm_network}\"\n"
-            #end
+            #  Append virt network options
             netOpts = ""
             networkID = 0
             for element in guestvm_network do
-              if (config.debug =~ %r{true}i) ||
-                 (config.debug =~ %r{yes}i)
+              if (config.debug =~ %r{true}i)
                 puts "guestvm_network[#{networkID}]: #{element}"
               end
               new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
@@ -222,6 +219,7 @@ module VagrantPlugins
               end
             end
 
+            # append custom_vmx_settings if exists
             if config.custom_vmx_settings.is_a? Array
               env[:machine].provider_config.custom_vmx_settings.each do |k, v|
                 new_vmx_contents << "#{k} = \"#{v}\"\n"
@@ -286,19 +284,6 @@ module VagrantPlugins
             end
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Resource Pool   : #{resource_pool}")
-            #
-            #  Encode special characters in PW
-            #
-            encoded_esxi_password = config.esxi_password.gsub('@', '%40').gsub(\
-              '<', '%3c').gsub('>', '%3e').gsub(\
-              '[', '%5b').gsub(']', '%5d').gsub(\
-              '(', '%28').gsub(')', '%29').gsub(\
-              '%', '%25').gsub('#', '%23').gsub(\
-              '&', '%26').gsub(':', '%3a').gsub(\
-              '/', '%2f').gsub('\\','%5c').gsub(\
-              '"', '%22').gsub('\'','%27').gsub(\
-              '*', '%2a').gsub('?', '%3f')
-
 
             #
             # Using ovftool, import vmx in box folder, export to ESXi server
@@ -313,32 +298,34 @@ module VagrantPlugins
                   "#{netOpts} -dm=thin --powerOn "\
                   "-ds=\"#{guestvm_dsname}\" --name=\"#{guestvm_vmname}\" "\
                   "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
-                  "#{encoded_esxi_password}@#{config.esxi_hostname}"\
+                  "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
                   "#{resource_pool}"
 
             #  Security bug if unremarked! Password will be exposed in log file.
-            #  @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
-            if (config.debug =~ %r{true}i) ||
-               (config.debug =~ %r{yes}i)
-               puts "ovftool command: #{ovf_cmd}"
+            if (config.debug =~ %r{password}i)
+              @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
+              puts "ovftool command: #{ovf_cmd}"
+            end
+            if (config.debug =~ %r{true}i)
+              ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
+              puts "ovftool command: #{ovf_cmd_nopw}"
             end
             unless system "#{ovf_cmd}"
               raise Errors::OVFToolError, message: ''
             end
 
-            # VMX file is not needed any longer
-            if (config.debug =~ %r{true}i) ||
-               (config.debug =~ %r{yes}i)
+            # VMX file is not needed any longer. Delete it
+            if (config.debug =~ %r{true}i)
                puts "Keeping file: #{new_vmx_file}"
              else
                File.delete(new_vmx_file)
              end
 
-            r = ssh config.esxi_hostname,
+            r = ssh.exec!(
                     'vim-cmd vmsvc/getallvms |'\
-                    "grep \" #{guestvm_vmname} \"|awk '{print $1}'"
-            vmid = r.stdout
-            if (vmid == '') || (r.exit_code != 0)
+                    "grep \" #{guestvm_vmname} \"|awk '{print $1}'")
+            vmid = r
+            if (vmid == '') || (r.exitstatus != 0)
               raise Errors::ESXiError,
                     message: "Unable to register / start #{guestvm_vmname}"
             end

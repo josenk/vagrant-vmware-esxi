@@ -1,5 +1,5 @@
 require 'log4r'
-require 'net/ssh/simple'
+require 'net/ssh'
 
 module VagrantPlugins
   module ESXi
@@ -28,19 +28,21 @@ module VagrantPlugins
           elsif env[:machine_state].to_s == 'not_created'
             env[:ui].info I18n.t('vagrant_vmware_esxi.already_destroyed')
           else
-            Net::SSH::Simple.sync(
-              user:     config.esxi_username,
-              password: config.esxi_password,
-              port:     config.esxi_hostport,
-              keys:     config.esxi_private_keys
-            ) do
+            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+              password:                   $esxi_password,
+              port:                       config.esxi_hostport,
+              keys:                       config.esxi_private_keys,
+              timeout:                    10,
+              number_of_password_prompts: 0,
+              non_interactive:            true
+            ) do |ssh|
 
-              r = ssh config.esxi_hostname,
-                      "vim-cmd vmsvc/power.off #{machine.id}"
-              if r.exit_code != 0
+              r = ssh.exec!("vim-cmd vmsvc/power.off #{machine.id}")
+
+              if r.exitstatus != 0
                 raise Errors::ESXiError,
                       message: "Unable to power off the VM:\n"
-                               "  #{r.stdout}\n#{r.stderr}"
+                               "  #{r}"
               end
               env[:ui].info I18n.t('vagrant_vmware_esxi.states.powered_off.short')
             end

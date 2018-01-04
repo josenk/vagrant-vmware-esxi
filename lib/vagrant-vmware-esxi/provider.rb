@@ -21,7 +21,6 @@ module VagrantPlugins
       end
 
       def state
-        #@machine.action('connect_esxi')
         env = @machine.action('read_state')
         state_id = env[:machine_state]
 
@@ -30,6 +29,11 @@ module VagrantPlugins
 
         short = I18n.t("vagrant_vmware_esxi.states.#{state_id}.short")
         long  = I18n.t("vagrant_vmware_esxi.states.#{state_id}.long")
+
+        # If we're not created, then specify the special ID flag
+        if state_id == :not_created
+          state_id = Vagrant::MachineState::NOT_CREATED_ID
+        end
 
         # Return the MachineState object
         Vagrant::MachineState.new(state_id, short, long)

@@ -1,4 +1,3 @@
-
 module VagrantPlugins
   module ESXi
     module Cap

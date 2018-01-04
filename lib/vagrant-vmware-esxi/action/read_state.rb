@@ -1,5 +1,5 @@
 require 'log4r'
-require 'net/ssh/simple'
+require 'net/ssh'
 require 'socket'
 
 module VagrantPlugins
@@ -36,26 +36,28 @@ module VagrantPlugins
           machine = env[:machine]
           config = env[:machine].provider_config
 
-
           return :not_created if machine.id.to_i < 1
 
           @logger.info("vagrant-vmware-esxi, read_state: machine id: #{machine.id}")
           @logger.info("vagrant-vmware-esxi, read_state: current state: #{env[:machine_state]}")
 
-          Net::SSH::Simple.sync(
-            user:     config.esxi_username,
-            password: config.esxi_password,
-            port:     config.esxi_hostport,
-            keys:     config.esxi_private_keys
-          ) do
+          Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            password:                   $esxi_password,
+            port:                       config.esxi_hostport,
+            keys:                       config.esxi_private_keys,
+            timeout:                    10,
+            number_of_password_prompts: 0,
+            non_interactive:            true
+          ) do |ssh|
 
-            r = ssh config.esxi_hostname,
+            r = ssh.exec!(
                     "vim-cmd vmsvc/getallvms|grep -q \"^#{machine.id} \" && "\
-                    "vim-cmd vmsvc/power.getstate #{machine.id} || return 254"
-            power_status = r.stdout
+                    "vim-cmd vmsvc/power.getstate #{machine.id} || return 254")
+            power_status = r
 
-            return :not_created if r.exit_code == 254
-            if power_status == "" or r.exit_code != 0
+            return :not_created if r.exitstatus == 254
+
+            if power_status == "" or r.exitstatus != 0
               raise Errors::ESXiError,
                     message: 'Unable to get VM Power State!'
             end

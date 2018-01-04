@@ -22,7 +22,7 @@ Vagrant.configure("2") do |config|
     #
     esxi.esxi_hostname = "esxi"
     esxi.esxi_username = "root"
-    esxi.esxi_password = nil
+    esxi.esxi_password = "file:"
     #esxi.esxi_private_keys = []
     #esxi.esxi_hostport = 22
     #esxi.virtual_network = "vmnet_example"

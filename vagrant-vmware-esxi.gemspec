@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
   s.add_runtime_dependency "nokogiri", '> 1.5'
-  s.add_runtime_dependency "net-ssh-simple", '> 1.5'
+  s.add_runtime_dependency "net-ssh", '> 3.0'
 
   s.add_development_dependency "bundler"
   s.add_development_dependency "rspec-core"

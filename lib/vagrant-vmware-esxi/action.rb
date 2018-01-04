@@ -5,14 +5,10 @@ module VagrantPlugins
     # actions and how to run them
     module Action
       include Vagrant::Action::Builtin
-      def self.action_connect_esxi
-        Vagrant::Action::Builder.new.tap do |b|
-          b.use ConnectESXi
-        end
-      end
 
       def self.action_read_state
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadSSHInfo
           b.use ReadState
         end
@@ -20,12 +16,14 @@ module VagrantPlugins
 
       def self.action_read_ssh_info
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadSSHInfo
         end
       end
 
       def self.action_halt
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use Halt
         end
@@ -33,6 +31,7 @@ module VagrantPlugins
 
       def self.action_suspend
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use Suspend
         end
@@ -40,6 +39,7 @@ module VagrantPlugins
 
       def self.action_resume
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use Resume
         end
@@ -47,6 +47,7 @@ module VagrantPlugins
 
       def self.action_ssh
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use ReadSSHInfo
           b.use SSHExec
@@ -56,24 +57,28 @@ module VagrantPlugins
 
       def self.action_snapshot_list
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use SnapshotList
         end
       end
 
       def self.action_snapshot_info
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use SnapshotInfo
         end
       end
 
       def self.action_snapshot_save
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use SnapshotSave
         end
       end
 
       def self.action_snapshot_restore
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use action_halt
           b.use Call, WaitForState, :powered_off, 240 do |env1, b1|
             if env1[:result] == 'True'
@@ -86,6 +91,7 @@ module VagrantPlugins
 
       def self.action_snapshot_delete
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use SnapshotDelete
         end
       end
@@ -93,6 +99,7 @@ module VagrantPlugins
 
       def self.action_destroy
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use Call, ReadState do |env1, b1|
             unless env1[:machine_state] == 'powered_off'
               b1.use action_halt
@@ -105,6 +112,7 @@ module VagrantPlugins
 
       def self.action_reload
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use Call, ReadState do |env1, b1|
             if (env1[:machine_state].to_s == 'powered_on') ||
                (env1[:machine_state].to_s == 'running') ||
@@ -118,8 +126,8 @@ module VagrantPlugins
 
       def self.action_up
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ConfigValidate
-          b.use ConnectESXi
           b.use HandleBox
           b.use ReadState
           b.use CreateVM
@@ -135,6 +143,7 @@ module VagrantPlugins
 
       def self.action_provision
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use Call, WaitForState, :running, 240 do |env1, b1|
             if env1[:result] == 'True'
@@ -149,13 +158,14 @@ module VagrantPlugins
 
       def self.action_package
         Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
           b.use ReadState
           b.use Package
         end
       end
 
       action_root = Pathname.new(File.expand_path('../action', __FILE__))
-      autoload :ConnectESXi, action_root.join('connect_esxi')
+      autoload :SetESXiPassword, action_root.join('esxi_password')
       autoload :CreateVM, action_root.join('createvm')
       autoload :ReadState, action_root.join('read_state')
       autoload :ReadSSHInfo, action_root.join('read_ssh_info')

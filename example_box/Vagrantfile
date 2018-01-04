@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
   #config.vm.box = 'generic/alpine36'
 
 
-  #  Supports type rsync and NFS.
+  #  Synced folders supports type rsync and NFS.
   config.vm.synced_folder('.', '/Vagrantfiles', type: 'rsync')
 
   #
@@ -37,27 +37,52 @@ Vagrant.configure("2") do |config|
     esxi.esxi_username = "root"
 
     #
-    #  A NOTE about esxi_password / ssh keys!!
-    #
-    #    If you don't specify a password and do not use ssh
-    #    keys, you will be entering your esxi password A LOT!
-    #
-    #    From your command line, you should be able to run
-    #    following command without an error and be able to get to
-    #    the esxi command prompt.
-    #
-    #      $ ssh root@ESXi_IP_ADDRESS
-
     #  IMPORTANT!  ESXi password.
-    #    The ssh connections to esxi will try your ssh
-    #    keys first.  However the ovftool does NOT!  To make
-    #    vagrant up fully password-less, you will need to
-    #    enter your password here....
-    esxi.esxi_password = nil
+    #  *** NOTES about esxi_password & ssh keys!! ***
+    #
+    #    1)  esxi.esxi_password = "my_esxi_password"
+    #        Enter your esxi passowrd in clear text here...
+    #
+    #    2)  "key:"  or  ""  or "key:~/.ssh/some_ssh_private_key"
+    #        Use ssh keys.  The default is to use the system private keys,
+    #        or you specify a custom private key after the colon ":".
+    #
+    #        From your command line, you should be able to run
+    #        following command without an error and be able to get to
+    #        the esxi command prompt.
+    #
+    #            $ ssh root@ESXi_IP_ADDRESS
+    #
+    #        The ssh connections to esxi will try the ssh private
+    #        keys.  However the ovftool does NOT!  To make
+    #        vagrant fully password-less, you will need to use other
+    #        options. (set the passord, use "env:" or "file:")
+    #
+    #    3) "prompt:"
+    #       This will prompt you for the esxi password each time you
+    #       run a vagrant command.
+    #
+    #    4) "file:"  or  "file:my_secret_file"
+    #       This will read a plain text file containing the esxi
+    #       password.   The default filename is ~/.esxi_password, or
+    #       you can specify any filename after the colon ":".
+    #
+    #    5) "env:"  or "env:my_secret_env_var"
+    #        This will read the esxi password via a environment
+    #        variable.  The default is $esxi_password, but you can
+    #        specify any environment variable after the colon ":".
+    #
+    #            $ export esxi_password="my_secret_password"
+    #
+    #
+    #  IMPORTANT!  Set the ESXi password.
+    esxi.esxi_password = "prompt:"
 
-    #  ESXi ssh keys
-    #    The Default is to use system defaults, However
+    #  ESXi ssh keys.   (This will be depreciated!!!)
+    #    The Default is to use system default ssh keys, However
     #    you can specify an array of keys here...
+    #
+    #   ***  Depreciated, use esxi_password = "key:" instead. ***
     #esxi.esxi_private_keys = []
 
     #  SSH port.
