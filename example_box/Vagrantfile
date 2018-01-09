@@ -90,9 +90,13 @@ Vagrant.configure("2") do |config|
     #esxi.esxi_hostport = 22
 
     #  HIGHLY RECOMMENDED!  Virtual Network
-    #    You should specify a Virtual Network!
-    #    The default is to use the first found!
-    #    You can specify up to 4 virtual networks using an array format.
+    #    You should specify a Virtual Network!  If it's not specified, the
+    #    default is to use the first found.  You can specify up to 4 virtual
+    #    networks using an array format.  Note that Vagrant only looks at the
+    #    first interface for a valid IP address.  BTW: This does not configure
+    #    IP addresses.  This specifies which ESXi virtual network to use for
+    #    each network interface in your VM.  For most OS's DHCP is the default,
+    #    so, you will need a DHCP server for each virtual network.
     #esxi.virtual_network = "vmnet_example"
     #esxi.virtual_network = ["vmnet1","vmnet2","vmnet3","vmnet4"]
 

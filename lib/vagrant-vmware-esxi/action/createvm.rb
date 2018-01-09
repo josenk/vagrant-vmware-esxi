@@ -98,21 +98,21 @@ module VagrantPlugins
             end
 
             if availvolumes.include? desired_ds
-              guestvm_dsname = desired_ds
+              @guestvm_dsname = desired_ds
             else
-              guestvm_dsname = availvolumes.last
+              @guestvm_dsname = availvolumes.last
             end
 
-            if (guestvm_dsname != desired_ds) &&
+            if (@guestvm_dsname != desired_ds) &&
                !config.vm_disk_store.nil?
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                    message: 'WARNING         : '\
                                             "#{config.vm_disk_store} not "\
-                                            "found, using #{guestvm_dsname}")
+                                            "found, using #{@guestvm_dsname}")
             end
 
             @logger.info('vagrant-vmware-esxi, createvm: '\
-                         "guestvm_dsname: #{guestvm_dsname}")
+                         "@guestvm_dsname: #{@guestvm_dsname}")
 
             #
             #  Figure out network
@@ -131,10 +131,10 @@ module VagrantPlugins
                              "#{r.stderr}"
             end
 
-            guestvm_network = []
+            @guestvm_network = []
             counter = 0
             if config.virtual_network.nil?
-              guestvm_network[0] = availnetworks.first
+              @guestvm_network[0] = availnetworks.first
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                     message: 'WARNING         : '\
                                              "config.virtual_network not "\
@@ -143,9 +143,9 @@ module VagrantPlugins
               networkID = 0
               for aVirtNet in Array(config.virtual_network) do
                 if availnetworks.include? aVirtNet
-                  guestvm_network << aVirtNet
+                  @guestvm_network << aVirtNet
                 else
-                  guestvm_network << availnetworks.first
+                  @guestvm_network << availnetworks.first
                   env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                        message: 'WARNING         : '\
                                                 "#{aVirtNet} not "\
@@ -157,170 +157,182 @@ module VagrantPlugins
                 end
               end
             end
+          end
 
-            @logger.info('vagrant-vmware-esxi, createvm: '\
-                         "virtual_network: #{guestvm_network}")
+          @logger.info('vagrant-vmware-esxi, createvm: '\
+                       "virtual_network: #{@guestvm_network}")
 
-            #   finalize some paramaters
-            if (config.memsize.is_a? String) || (config.memsize.is_a? Integer)
-              desired_memsize = config.memsize.to_s.to_i
-            end
-            if (config.numvcpus.is_a? String) || (config.numvcpus.is_a? Integer)
-              desired_numvcpus = config.numvcpus.to_s.to_i
-            end
+          #   finalize some paramaters
+          if (config.memsize.is_a? String) || (config.memsize.is_a? Integer)
+            desired_memsize = config.memsize.to_s.to_i
+          end
+          if (config.numvcpus.is_a? String) || (config.numvcpus.is_a? Integer)
+            desired_numvcpus = config.numvcpus.to_s.to_i
+          end
 
-            #
-            #   Fix/clean up vmx file.
-            #
-            new_vmx_contents = ''
-            File.readlines(vmx_file).each do |line|
+          #
+          #   Fix/clean up vmx file.
+          #
+          new_vmx_contents = ''
+          File.readlines(vmx_file).each do |line|
 
-              if line.match(/^displayname =/i)
-                new_vmx_contents << "displayname = \"#{guestvm_vmname}\"\n"
-              elsif line.match(/^memsize =/i) && (!desired_memsize.nil?)
-                new_vmx_contents << "memsize = \"#{desired_memsize}\"\n"
-              elsif line.match(/^numvcpus =/i) && (!desired_numvcpus.nil?)
-                new_vmx_contents << "numvcpus = \"#{desired_numvcpus}\"\n"
-              elsif line.match(/^ethernet[0-9].networkName =/i) ||
-                    line.match(/^ethernet[0-9].addressType =/i) ||
-                    line.match(/^ethernet[0-9].present =/i) ||
-                    line.match(/^ethernet[0-9].address =/i) ||
-                    line.match(/^ethernet[0-9].generatedAddress =/i) ||
-                    line.match(/^ethernet[0-9].generatedAddressOffset =/i)
-                # Do nothing, delete these lines
-              else
-                new_vmx_contents << line
-              end
-            end
-
-            #  finalize vmx.
-            unless new_vmx_contents =~ %r{^numvcpus =}i
-              if desired_numvcpus.nil?
-                new_vmx_contents << "numvcpus = \"1\"\n"
-              else
-                new_vmx_contents << "numvcpus = \"#{desired_numvcpus}\"\n"
-              end
-            end
-
-            #  Append virt network options
-            netOpts = ""
-            networkID = 0
-            for element in guestvm_network do
-              if (config.debug =~ %r{true}i)
-                puts "guestvm_network[#{networkID}]: #{element}"
-              end
-              new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
-              new_vmx_contents << "ethernet#{networkID}.present = \"TRUE\"\n"
-              new_vmx_contents << "ethernet#{networkID}.addressType = \"generated\"\n"
-              netOpts << " --net:\"net#{networkID}=#{element}\""
-              networkID += 1
-              if networkID >= 4
-                break
-              end
-            end
-
-            # append custom_vmx_settings if exists
-            if config.custom_vmx_settings.is_a? Array
-              env[:machine].provider_config.custom_vmx_settings.each do |k, v|
-                new_vmx_contents << "#{k} = \"#{v}\"\n"
-              end
-            end
-
-            #  Write new vmx file
-            filename_only = File.basename vmx_file, '.vmx'
-            path_only = File.dirname vmx_file
-            new_vmx_file = "#{path_only}/ZZZZ_#{guestvm_vmname}.vmx"
-
-            File.open(new_vmx_file, 'w') { |file|
-              file.write(new_vmx_contents)
-              file.close
-            }
-
-            #
-            #  Check if using a Resource Pool
-            if config.resource_pool.is_a? String
-              if config.resource_pool =~ %r{^\/}
-                resource_pool = config.resource_pool
-              else
-                resource_pool = '/'
-                resource_pool << config.resource_pool
-              end
+            if line.match(/^displayname =/i)
+              new_vmx_contents << "displayname = \"#{guestvm_vmname}\"\n"
+            elsif line.match(/^memsize =/i) && (!desired_memsize.nil?)
+              new_vmx_contents << "memsize = \"#{desired_memsize}\"\n"
+            elsif line.match(/^numvcpus =/i) && (!desired_numvcpus.nil?)
+              new_vmx_contents << "numvcpus = \"#{desired_numvcpus}\"\n"
+            elsif line.match(/^ethernet[0-9].networkName =/i) ||
+                  line.match(/^ethernet[0-9].addressType =/i) ||
+                  line.match(/^ethernet[0-9].present =/i) ||
+                  line.match(/^ethernet[0-9].address =/i) ||
+                  line.match(/^ethernet[0-9].generatedAddress =/i) ||
+                  line.match(/^ethernet[0-9].generatedAddressOffset =/i)
+              # Do nothing, delete these lines
             else
-              resource_pool = ''
+              new_vmx_contents << line
             end
+          end
 
-            if (config.allow_overwrite =~ %r{true}i) ||
-               (config.allow_overwrite =~ %r{yes}i)
-              overwrite_opts = '--overwrite --powerOffTarget'
+          #  finalize vmx.
+          unless new_vmx_contents =~ %r{^numvcpus =}i
+            if desired_numvcpus.nil?
+              new_vmx_contents << "numvcpus = \"1\"\n"
             else
-              overwrite_opts = nil
+              new_vmx_contents << "numvcpus = \"#{desired_numvcpus}\"\n"
             end
+          end
 
-            #
-            #  Display build summary
-            numvcpus = new_vmx_contents.match(/^numvcpus =.*/i)
-                       .to_s.gsub(/^numvcpus =/i, '').gsub(/\"/, '')
-            memsize = new_vmx_contents.match(/^memsize =.*/i)
-                      .to_s.gsub(/^memsize =/i, '').gsub(/\"/, '')
-            guestOS = new_vmx_contents.match(/^guestOS =.*/i)
-                      .to_s.gsub(/^guestOS =/i, '').gsub(/\"/, '')
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "ESXi host       : #{config.esxi_hostname}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "VM Name         : #{guestvm_vmname}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "CPUS            :#{numvcpus}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Memsize (MB)    :#{memsize}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Guest OS type   :#{guestOS}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Disk Store      : #{guestvm_dsname}")
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "NetworkName     : #{guestvm_network[0..3]}")
-            unless overwrite_opts.nil?
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: 'Allow Overwrite : True')
-            end
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Resource Pool   : #{resource_pool}")
-
-            #
-            # Using ovftool, import vmx in box folder, export to ESXi server
-            #
-            unless system 'ovftool --version'
-              raise Errors::OVFToolError,
-                    message: 'ovftool not found or not in your path.'\
-                             "  Please download and "\
-                             '  install from http://www.vmware.com.'
-            end
-            ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
-                  "#{netOpts} -dm=thin --powerOn "\
-                  "-ds=\"#{guestvm_dsname}\" --name=\"#{guestvm_vmname}\" "\
-                  "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
-                  "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
-                  "#{resource_pool}"
-
-            #  Security bug if unremarked! Password will be exposed in log file.
-            if (config.debug =~ %r{password}i)
-              @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
-              puts "ovftool command: #{ovf_cmd}"
-            end
+          #  Append virt network options
+          netOpts = ""
+          networkID = 0
+          for element in @guestvm_network do
             if (config.debug =~ %r{true}i)
-              ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
-              puts "ovftool command: #{ovf_cmd_nopw}"
+              puts "@guestvm_network[#{networkID}]: #{element}"
             end
-            unless system "#{ovf_cmd}"
-              raise Errors::OVFToolError, message: ''
+            new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
+            new_vmx_contents << "ethernet#{networkID}.present = \"TRUE\"\n"
+            new_vmx_contents << "ethernet#{networkID}.addressType = \"generated\"\n"
+            netOpts << " --net:\"net#{networkID}=#{element}\""
+            networkID += 1
+            if networkID >= 4
+              break
             end
+          end
 
-            # VMX file is not needed any longer. Delete it
-            if (config.debug =~ %r{true}i)
-               puts "Keeping file: #{new_vmx_file}"
-             else
-               File.delete(new_vmx_file)
-             end
+          # append custom_vmx_settings if exists
+          if config.custom_vmx_settings.is_a? Array
+            env[:machine].provider_config.custom_vmx_settings.each do |k, v|
+              new_vmx_contents << "#{k} = \"#{v}\"\n"
+            end
+          end
 
+          #  Write new vmx file
+          filename_only = File.basename vmx_file, '.vmx'
+          path_only = File.dirname vmx_file
+          new_vmx_file = "#{path_only}/ZZZZ_#{guestvm_vmname}.vmx"
+
+          File.open(new_vmx_file, 'w') { |file|
+            file.write(new_vmx_contents)
+            file.close
+          }
+
+          #
+          #  Check if using a Resource Pool
+          if config.resource_pool.is_a? String
+            if config.resource_pool =~ %r{^\/}
+              resource_pool = config.resource_pool
+            else
+              resource_pool = '/'
+              resource_pool << config.resource_pool
+            end
+          else
+            resource_pool = ''
+          end
+
+          if (config.allow_overwrite =~ %r{true}i) ||
+             (config.allow_overwrite =~ %r{yes}i)
+            overwrite_opts = '--overwrite --powerOffTarget'
+          else
+            overwrite_opts = nil
+          end
+
+          #
+          #  Display build summary
+          numvcpus = new_vmx_contents.match(/^numvcpus =.*/i)
+                     .to_s.gsub(/^numvcpus =/i, '').gsub(/\"/, '')
+          memsize = new_vmx_contents.match(/^memsize =.*/i)
+                    .to_s.gsub(/^memsize =/i, '').gsub(/\"/, '')
+          guestOS = new_vmx_contents.match(/^guestOS =.*/i)
+                    .to_s.gsub(/^guestOS =/i, '').gsub(/\"/, '')
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "ESXi host       : #{config.esxi_hostname}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "VM Name         : #{guestvm_vmname}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "CPUS            :#{numvcpus}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "Memsize (MB)    :#{memsize}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "Guest OS type   :#{guestOS}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "Disk Store      : #{@guestvm_dsname}")
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "NetworkName     : #{@guestvm_network[0..3]}")
+          unless overwrite_opts.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: 'Allow Overwrite : True')
+          end
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "Resource Pool   : #{resource_pool}")
+
+          #
+          # Using ovftool, import vmx in box folder, export to ESXi server
+          #
+          unless system 'ovftool --version'
+            raise Errors::OVFToolError,
+                  message: 'ovftool not found or not in your path.'\
+                           "  Please download and "\
+                           '  install from http://www.vmware.com.'
+          end
+          ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
+                "#{netOpts} -dm=thin --powerOn "\
+                "-ds=\"#{@guestvm_dsname}\" --name=\"#{guestvm_vmname}\" "\
+                "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
+                "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
+                "#{resource_pool}"
+
+          #  Security bug if unremarked! Password will be exposed in log file.
+          if (config.debug =~ %r{password}i)
+            @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
+            puts "ovftool command: #{ovf_cmd}"
+          end
+          if (config.debug =~ %r{true}i)
+            ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
+            puts "ovftool command: #{ovf_cmd_nopw}"
+          end
+          unless system "#{ovf_cmd}"
+            raise Errors::OVFToolError, message: ''
+          end
+
+          # VMX file is not needed any longer. Delete it
+          if (config.debug =~ %r{true}i)
+            puts "Keeping file: #{new_vmx_file}"
+          else
+            File.delete(new_vmx_file)
+          end
+
+          #
+          #  Re-open the network connection to get VMID
+          #
+          Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            password:                   $esxi_password,
+            port:                       config.esxi_hostport,
+            keys:                       config.esxi_private_keys,
+            timeout:                    10,
+            number_of_password_prompts: 0,
+            non_interactive:            true
+          ) do |ssh|
             r = ssh.exec!(
                     'vim-cmd vmsvc/getallvms |'\
                     "grep \" #{guestvm_vmname} \"|awk '{print $1}'")

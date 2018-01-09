@@ -139,10 +139,12 @@ Vagrant.configure("2") do |config|
 
     #  HIGHLY RECOMMENDED!  Virtual Network
     #    You should specify a Virtual Network!  If it's not specified, the
-    #    default is to use the first found.
-    #    You can specify up to 4 virtual networks using an array
-    #    format.  Note that Vagrant only looks at the first
-    #    interface for a valid IP address.
+    #    default is to use the first found.  You can specify up to 4 virtual
+    #    networks using an array format.  Note that Vagrant only looks at the
+    #    first interface for a valid IP address.  BTW: This does not configure
+    #    IP addresses.  This specifies which ESXi virtual network to use for
+    #    each network interface in your VM.  For most OS's DHCP is the default,
+    #    so, you will need a DHCP server for each virtual network.
     #esxi.virtual_network = "vmnet_example"
     #esxi.virtual_network = ["vmnet1","vmnet2","vmnet3","vmnet4"]
 
@@ -223,6 +225,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 1.3.2 Fix, Don't timeout ssh connection when ovftool takes a long time to upload image.
 * 1.3.0 Add support to get esxi password from env, from a file or prompt.
 * 1.2.1 Encode special characters in password.
 * 1.2.0 Add support for up to 4 virtual networks.
