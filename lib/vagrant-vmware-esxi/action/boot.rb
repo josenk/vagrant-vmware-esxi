@@ -38,7 +38,7 @@ module VagrantPlugins
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,
-              timeout:                    10,
+              timeout:                    20,
               number_of_password_prompts: 0,
               non_interactive:            true
             ) do |ssh|
@@ -47,7 +47,8 @@ module VagrantPlugins
               if r.exitstatus != 0
                 raise Errors::ESXiError,
                       message: "Unable to power on VM:\n"\
-                               "  #{r}"
+                               "  #{r}"\
+                               '  Review ESXi logs for additional information!'
               end
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                    message: 'VM has been Powered On...')

@@ -29,9 +29,6 @@ module VagrantPlugins
           #  Set global variable $esxi_password
           #
           if $esxi_password.nil?
-            if (config.debug =~ %r{password}i)
-              puts "$esxi_password is unset..."
-            end
             if (config.esxi_password =~ %r{^prompt:}i)
               #
               #  Prompt for password
@@ -98,11 +95,6 @@ module VagrantPlugins
               $esxi_password = config.esxi_password
             end
           end
-          if (config.debug =~ %r{password}i)
-            puts "pw (set_esxi_password): #{$esxi_password}"
-            puts "esxi_private_keys: #{config.esxi_private_keys}"
-          end
-
 
           #
           #  Encode special characters in PW
@@ -128,7 +120,7 @@ module VagrantPlugins
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,
-              timeout:                    10,
+              timeout:                    20,
               number_of_password_prompts: 0,
               non_interactive:            true
             ) do |ssh|

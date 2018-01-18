@@ -83,7 +83,13 @@ module VagrantPlugins
           b.use Call, WaitForState, :powered_off, 240 do |env1, b1|
             if env1[:result] == 'True'
               b1.use SnapshotRestore
-              b1.use action_up
+              b1.use ReadState
+              b1.use Boot
+              b1.use Call, WaitForState, :running, 240 do |env1, b2|
+                if env1[:result] == 'True'
+                  #
+                end
+              end
             end
           end
         end
@@ -135,6 +141,7 @@ module VagrantPlugins
           b.use Boot
           b.use Call, WaitForState, :running, 240 do |env1, b1|
             if env1[:result] == 'True'
+              b1.use SetNetworkIP
               b1.use action_provision
             end
           end
@@ -169,6 +176,7 @@ module VagrantPlugins
       autoload :CreateVM, action_root.join('createvm')
       autoload :ReadState, action_root.join('read_state')
       autoload :ReadSSHInfo, action_root.join('read_ssh_info')
+      autoload :SetNetworkIP, action_root.join('set_network_ip')
       autoload :Boot, action_root.join('boot')
       autoload :Halt, action_root.join('halt')
       autoload :Destroy, action_root.join('destroy')

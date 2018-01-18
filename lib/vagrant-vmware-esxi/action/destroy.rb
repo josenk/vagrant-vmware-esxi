@@ -37,7 +37,7 @@ module VagrantPlugins
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,
-              timeout:                    10,
+              timeout:                    20,
               number_of_password_prompts: 0,
               non_interactive:            true
             ) do |ssh|
@@ -45,7 +45,7 @@ module VagrantPlugins
               r = ssh.exec!("vim-cmd vmsvc/destroy #{machine.id}")
               if r.exitstatus != 0
                 raise Errors::ESXiError,
-                      message => "Unable to destroy the VM:\n"\
+                      message: "Unable to destroy the VM:\n"\
                                  "  #{r}"
               end
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',

@@ -15,6 +15,8 @@ module VagrantPlugins
       attr_accessor :vmname_prefix
       attr_accessor :vm_disk_store
       attr_accessor :virtual_network
+      attr_accessor :nic_type
+      attr_accessor :mac_address
       attr_accessor :resource_pool
       attr_accessor :memsize
       attr_accessor :numvcpus
@@ -34,6 +36,8 @@ module VagrantPlugins
         @vmname_prefix = 'V-'
         @vm_disk_store = nil
         @virtual_network = nil
+        @nic_type = nil
+        @mac_address = ["","","",""]
         @resource_pool = nil
         @memsize = UNSET_VALUE
         @numvcpus = UNSET_VALUE

@@ -38,9 +38,11 @@ module VagrantPlugins
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,
-              timeout:                    10,
+              timeout:                    20,
               number_of_password_prompts: 0,
-              non_interactive:            true
+              non_interactive:            true,
+              keepalive:                  true,
+              keepalive_interval:         30
             ) do |ssh|
 
               r = ssh.exec!(
