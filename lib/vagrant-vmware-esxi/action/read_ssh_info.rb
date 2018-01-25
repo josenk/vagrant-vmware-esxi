@@ -67,14 +67,14 @@ module VagrantPlugins
             ssh_execute_cmd << 'grep "uptimeSeconds ="|sed "s/^.*= //g"|sed s/,//g'
             uptime = ssh.exec!(ssh_execute_cmd)
 
-            if ( r.length == 0 && uptime.to_i > 60)
+            if ( r.length == 0 && uptime.to_i > 120)
               ipaddress = r2.strip
             else
               ipaddress = r.strip
             end
 
             if (config.debug =~ %r{ip}i)
-              puts "ip1: |#{r.strip}| ip2: |#{r2.strip}|  ipaddress: #{ipaddress}"
+              puts "ip1 (prim):#{r.strip} ip2 (alt):#{r2.strip}  Final: #{ipaddress}"
             end
 
             return nil if (ipaddress == '')
