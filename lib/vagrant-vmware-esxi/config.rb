@@ -235,6 +235,12 @@ module VagrantPlugins
       def finalize!
         @private_key_path = nil if @private_key_path == UNSET_VALUE
         @ssh_username = nil if @ssh_username == UNSET_VALUE
+        if @virtual_network.is_a? String
+          @virtual_network = [@virtual_network]
+        end
+        if @virtual_network.nil?
+          @virtual_network = ['--NotSet--']
+        end
         @esxi_private_keys = @system_private_keys_path if @esxi_private_keys == UNSET_VALUE
         if @lax =~ /true/i
           @lax = 'True'

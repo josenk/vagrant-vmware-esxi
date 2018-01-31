@@ -30,14 +30,14 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.already_suspended')
           elsif (env[:machine_state].to_s == 'powered_off') ||
                 (env[:machine_state].to_s == 'not_created')
-           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                message: 'Cannot suspend in this state')
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: 'Cannot suspend in this state')
           else
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: 'Attempting to suspend')
 
             #
-            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,

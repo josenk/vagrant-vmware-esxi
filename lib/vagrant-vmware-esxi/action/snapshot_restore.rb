@@ -27,14 +27,14 @@ module VagrantPlugins
           @logger.info("vagrant-vmware-esxi, snapshot_restore: current state: #{env[:machine_state]}")
 
           if env[:machine_state].to_s == 'not_created'
-           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                message: 'Cannot snapshot_restore in this state')
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: 'Cannot snapshot_restore in this state')
           else
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: 'Attempting to snapshot_restore')
 
             #
-            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,

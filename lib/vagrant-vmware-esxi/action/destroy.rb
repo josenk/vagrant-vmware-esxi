@@ -33,7 +33,7 @@ module VagrantPlugins
             raise Errors::ESXiError,
                   message: 'Guest VM should have been powered off...'
           else
-            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,

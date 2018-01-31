@@ -41,7 +41,7 @@ module VagrantPlugins
           @logger.info("vagrant-vmware-esxi, read_state: machine id: #{machine.id}")
           @logger.info("vagrant-vmware-esxi, read_state: current state: #{env[:machine_state]}")
 
-          Net::SSH.start( config.esxi_hostname, config.esxi_username,
+          Net::SSH.start(config.esxi_hostname, config.esxi_username,
             password:                   $esxi_password,
             port:                       config.esxi_hostport,
             keys:                       config.esxi_private_keys,

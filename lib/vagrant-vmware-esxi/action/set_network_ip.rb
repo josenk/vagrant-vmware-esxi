@@ -44,7 +44,7 @@ module VagrantPlugins
           #
           vm_network = []
           env[:machine].config.vm.networks.each do |type, options|
-            # We only handle private and public networks
+            # I only handle private and public networks
             next if type != :private_network && type != :public_network
             next if vm_network.count >= number_of_adapters
             vm_network << options
@@ -56,7 +56,7 @@ module VagrantPlugins
           end
 
           networks_to_configure = []
-          if (number_of_adapters > 1 && vm_network.count > 0)
+          if (number_of_adapters > 1) and (vm_network.count > 0)
             1.upto(number_of_adapters - 1) do |index|
               if !vm_network[index - 1].nil?
                 options = vm_network[index - 1]
@@ -64,11 +64,11 @@ module VagrantPlugins
                 if options[:ip]
                   ip_class = options[:ip].gsub(/\..*$/,'').to_i
                   if ip_class < 127
-                    class_netmask = "255.0.0.0"
+                    class_netmask = '255.0.0.0'
                   elsif ip_class > 127 and ip_class < 192
-                    class_netmask = "255.255.0.0"
+                    class_netmask = '255.255.0.0'
                   elsif ip_class >= 192 and ip_class <= 223
-                    class_netmask = "255.255.255.0"
+                    class_netmask = '255.255.255.0'
                   end
 
                   # if netmask is not specified or is invalid, use, class defaults
@@ -79,7 +79,7 @@ module VagrantPlugins
                   end
                   unless netmask =~ /^(((128|192|224|240|248|252|254)\.0\.0\.0)|(255\.(0|128|192|224|240|248|252|254)\.0\.0)|(255\.255\.(0|128|192|224|240|248|252|254)\.0)|(255\.255\.255\.(0|128|192|224|240|248|252|254)))$/i
                     env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                         message: "WARNING:  Invalid netmask specified, using Class mask (#{class_netmask})")
+                                         message: "WARNING         : Invalid netmask specified, using Class mask (#{class_netmask})")
                     netmask = class_netmask
                   end
                   network = {
@@ -91,7 +91,7 @@ module VagrantPlugins
                     netmask: netmask,
                     gateway: options[:gateway]
                   }
-                  ip_msg = options[:ip]
+                  ip_msg = options[:ip] + '/'
                 else
                   network = {
                     interface: index,
@@ -104,7 +104,7 @@ module VagrantPlugins
                 end
                 networks_to_configure << network
                 env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: "Configuring: #{ip_msg} / #{netmask} on #{config.virtual_network[index]}")
+                                     message: "Configuring     : #{ip_msg}#{netmask} on #{config.virtual_network[index]}")
               end
             end
 

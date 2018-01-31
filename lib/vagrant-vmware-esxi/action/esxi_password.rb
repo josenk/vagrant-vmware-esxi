@@ -8,7 +8,7 @@ module VagrantPlugins
       # This action set the global variable esxi_password and attempt to
       # login to the esxi server to verify connectivity.
       class SetESXiPassword
-        def initialize(app, env)
+        def initialize(app, _env)
           @app    = app
           @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::set_esxi_password')
         end
@@ -22,26 +22,25 @@ module VagrantPlugins
           @logger.info('vagrant-vmware-esxi, set_esxi_password: start...')
 
           # Get config.
-          machine = env[:machine]
           config = env[:machine].provider_config
 
           #
           #  Set global variable $esxi_password
           #
           if $esxi_password.nil?
-            if (config.esxi_password =~ %r{^prompt:}i)
+            if config.esxi_password =~ %r{^prompt:}i
               #
               #  Prompt for password
               #
               begin
                 print "#{config.esxi_hostname} password:"
                 $esxi_password = STDIN.noecho(&:gets).chomp
-                puts ""
+                puts ''
               rescue
                 raise Errors::ESXiError,
-                      message: "Prompt for password error???"
+                      message: 'Prompt for password error???'
               end
-            elsif (config.esxi_password =~ %r{^env:}i)
+            elsif config.esxi_password =~ %r{^env:}i
               #
               #  Get pw from environment variable
               #
@@ -56,19 +55,19 @@ module VagrantPlugins
                 raise Errors::ESXiError,
                       message: "Unable to read environment variable: #{esxi_password_env}"
               end
-            elsif (config.esxi_password =~ %r{^file:}i)
+            elsif config.esxi_password =~ %r{^file:}i
               #
               #  Get password from file
               #
               esxi_password_file = config.esxi_password.gsub(/file:/i, '').chomp
-              if esxi_password_file.length < 1
+              if esxi_password_file.empty?
                 esxi_password_file = '~/.esxi_password'
               end
               esxi_password_file = File.expand_path(esxi_password_file)
               #  Get password from file
               begin
                 if File.file?(esxi_password_file)
-                  file_pw=""
+                  file_pw = ''
                   fh = File.open(File.expand_path(esxi_password_file))
                   file_pw = fh.readline
                   fh.close
@@ -79,13 +78,13 @@ module VagrantPlugins
               rescue
                 raise Errors::ESXiError, message: "Unable to open #{esxi_password_file}"
               end
-            elsif (config.esxi_password =~ %r{^key:}i)
+            elsif config.esxi_password =~ %r{^key:}i
               #
               #  use ssh keys
               #
-              $esxi_password = ""
+              $esxi_password = ''
               esxi_password_key = config.esxi_password.gsub(/key:/i, '').chomp
-              if esxi_password_key.length < 1
+              if esxi_password_key.empty?
                 config.esxi_private_keys = config.system_private_keys_path
               else
                 config.esxi_private_keys = esxi_password_key
@@ -99,11 +98,11 @@ module VagrantPlugins
           #
           #  Encode special characters in PW
           #
-          $encoded_esxi_password = $esxi_password.gsub('@', '%40').gsub(\
+          $encoded_esxi_password = $esxi_password.gsub('%', '%25').gsub(\
             '<', '%3c').gsub('>', '%3e').gsub(\
             '[', '%5b').gsub(']', '%5d').gsub(\
             '(', '%28').gsub(')', '%29').gsub(\
-            '%', '%25').gsub('#', '%23').gsub(\
+            '@', '%40').gsub('#', '%23').gsub(\
             '&', '%26').gsub(':', '%3a').gsub(\
             '/', '%2f').gsub('\\','%5c').gsub(\
             '"', '%22').gsub('\'','%27').gsub(\
@@ -117,7 +116,7 @@ module VagrantPlugins
           #  Test ESXi host connectivity
           #
           begin
-            Net::SSH.start( config.esxi_hostname, config.esxi_username,
+            Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.esxi_private_keys,
@@ -126,31 +125,33 @@ module VagrantPlugins
               non_interactive:            true
             ) do |ssh|
 
-              esxi_version = ssh.exec!("vmware -v")
+              esxi_version = ssh.exec!('vmware -v')
               ssh.close
 
               @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::set_esxi_password')
-              if esxi_version =~ %r{^vmware esxi}i
-                @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
-                             "ESXi version: #{esxi_version}")
-              else
+              if (config.debug =~ %r{true}i) && $showVersionFlag.nil?
+                $showVersionFlag = true
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "ESXi version    : #{esxi_version}")
+              end
+              if esxi_version !~ %r{^vmware esxi}i
                 @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
                              "ESXi version: #{esxi_version}")
                 raise Errors::ESXiError,
-                      message: "Unable to connect to ESXi host!"
+                      message: 'Unable to connect to ESXi host!'
               end
             end
           rescue
-            if (config.esxi_password =~ %r{^prompt:}i)
-              access_error_message = "Prompt for password"
-            elsif (config.esxi_password =~ %r{^env:}i)
+            if config.esxi_password =~ %r{^prompt:}i
+              access_error_message = 'Prompt for password'
+            elsif config.esxi_password =~ %r{^env:}i
               access_error_message = "env:#{esxi_password_env}"
-            elsif (config.esxi_password =~ %r{^file:}i)
+            elsif config.esxi_password =~ %r{^file:}i
               access_error_message = "file:#{esxi_password_file}"
-            elsif (config.esxi_password =~ %r{^key:}i)
+            elsif config.esxi_password =~ %r{^key:}i
               access_error_message = "key:#{config.esxi_private_keys}"
             else
-              access_error_message = "password in Vagrantfile"
+              access_error_message = 'password in Vagrantfile'
             end
 
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -160,7 +161,7 @@ module VagrantPlugins
                         "ESXi host access : #{access_error_message}")
 
             raise Errors::ESXiError,
-                  message: "Unable to connect to ESXi host!"
+                  message: 'Unable to connect to ESXi host!'
           end
         end
       end

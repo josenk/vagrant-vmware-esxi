@@ -1,5 +1,5 @@
 #
-# This is a Vagrantfile multi machine example.
+#  Multi machine, essential options Vagrant file example. (documentation removed)
 #
 
 nodes = [
@@ -7,7 +7,7 @@ nodes = [
   { hostname: 'VM-multi2', box: 'hashicorp/precise64' }
 ]
 
-Vagrant.configure("2") do |config|
+Vagrant.configure('2') do |config|
   nodes.each do |node|
     config.vm.define node[:hostname] do |node_config|
       node_config.vm.hostname = node[:hostname]
@@ -20,17 +20,14 @@ Vagrant.configure("2") do |config|
     #
     #   Provider settings
     #
-    esxi.esxi_hostname = "esxi"
-    esxi.esxi_username = "root"
-    esxi.esxi_password = "file:"
+    esxi.esxi_hostname = 'esxi'
+    esxi.esxi_username = 'root'
+    esxi.esxi_password = 'file:'
     #esxi.esxi_hostport = 22
-    #esxi.virtual_network = "vmnet_example"
-    #esxi.nic_type = 'e1000'
-    #esxi.vm_disk_store = "DS_001"
-    #esxi.vmname_prefix = "V-"
-    #esxi.memsize = "2048"
-    #esxi.numvcpus = "2"
-    #esxi.resource_pool = "/Vagrant"
-    #esxi.allow_overwrite = 'True'
+    #esxi.virtual_network = 'vmnet_example'
+    #esxi.vm_disk_store = 'DS_001'
+    #esxi.memsize = '2048'
+    #esxi.numvcpus = '2'
+    #esxi.resource_pool = '/Vagrant'
   end
 end

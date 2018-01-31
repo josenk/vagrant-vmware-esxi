@@ -78,12 +78,13 @@ module VagrantPlugins
             #
             #  Figure out DataStore
             r = ssh.exec!(
-                    'df | grep "^[VMFS|NFS]" | sort -nk4 |'\
-                    'sed "s|.*/vmfs/volumes/||g" | tail +2')
+                    'df 2>/dev/null| grep "^[VMFS|NFS].*/vmfs/volumes/" | '\
+                    'sort -nk4 | sed "s|.*/vmfs/volumes/||g"')
 
             availvolumes = r.split(/\n/)
-            if (config.debug =~ %r{true}i)
-               puts "Available DS Volumes: #{availvolumes}"
+            if config.debug =~ %r{true}i
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: "Avail DS vols   : #{availvolumes}")
             end
             if (r == '') || (r.exitstatus != 0)
               raise Errors::ESXiError,
@@ -93,6 +94,10 @@ module VagrantPlugins
             #  Use least-used if vm_disk_store is not set (or not found)
             if config.vm_disk_store.nil?
               desired_ds = '--- Least Used ---'
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: 'WARNING         : '\
+                                            "vm_disk_store not set, using "\
+                                            "\"--- Least Used ---\"")
             else
               desired_ds = config.vm_disk_store.to_s
             end
@@ -122,8 +127,9 @@ module VagrantPlugins
                     'grep Portgroups | sed "s/^   Portgroups: //g" |'\
                     'sed "s/,./\n/g"')
             availnetworks = r.split(/\n/)
-            if (config.debug =~ %r{true}i)
-               puts "Available Networks: #{availnetworks}"
+            if config.debug =~ %r{true}i
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: "Avail Networks  : #{availnetworks}")
             end
             if (availnetworks == '') || (r.exitstatus != 0)
               raise Errors::ESXiError,
@@ -131,30 +137,62 @@ module VagrantPlugins
                              "#{r.stderr}"
             end
 
-            @guestvm_network = []
-            counter = 0
-            if config.virtual_network.nil?
-              @guestvm_network[0] = availnetworks.first
+            #   How many vm.network are there?
+            vm_network_index = 0
+            env[:machine].config.vm.networks.each do |type, options|
+              # I only handle private and public networks
+              next if type != :private_network && type != :public_network
+              vm_network_index += 1
+            end
+
+            if config.debug =~ %r{true}i
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                    message: 'WARNING         : '\
-                                             "config.virtual_network not "\
-                                             "set, using #{availnetworks.first}")
-            else
-              networkID = 0
-              for aVirtNet in Array(config.virtual_network) do
-                if availnetworks.include? aVirtNet
-                  @guestvm_network << aVirtNet
+                                   message: "virtual_network : #{config.virtual_network}")
+            end
+
+            #  If there is more vm.network than virtual_network's configured
+            #  I need to add more virtual_networks.  Setting each to ---NotSet---
+            #  to give a warning below...
+            if vm_network_index >= config.virtual_network.count
+              config.virtual_network.count.upto(vm_network_index) do |index|
+                config.virtual_network << '--NotSet--'
+              end
+            end
+
+            #  Go through each virtual_network and make sure it's good.  If not
+            #  display a WARNING that we are choosing the first found.
+            @guestvm_network = []
+            networkID = 0
+            for aVirtNet in Array(config.virtual_network) do
+              if config.virtual_network == [''] ||
+                config.virtual_network[0] == '--NotSet--'
+                #  First (and only ) interface is not configure or not set
+                @guestvm_network = [availnetworks.first]
+                config.virtual_network = [availnetworks.first]
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                      message: 'WARNING         : '\
+                                               "virtual_network[#{networkID}] not "\
+                                               "set, using #{availnetworks.first}")
+              elsif availnetworks.include? aVirtNet
+                # Network interface is good
+                @guestvm_network << aVirtNet
+              else
+                # Network interface is NOT good.
+                @guestvm_network[networkID] = availnetworks.first
+                config.virtual_network[networkID] = availnetworks.first
+                if aVirtNet == '--NotSet--'
+                  aVirtNet_msg = "virtual_network[#{networkID}]"
                 else
-                  @guestvm_network << availnetworks.first
-                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                       message: 'WARNING         : '\
-                                                "#{aVirtNet} not "\
-                                                "found, using #{availnetworks.first}")
+                  aVirtNet_msg = aVirtNet
                 end
-                networkID += 1
-                if networkID >= 4
-                  break
-                end
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'WARNING         : '\
+                                              "#{aVirtNet_msg} not "\
+                                              "found, using #{availnetworks.first}")
+              end
+              networkID += 1
+              if networkID >= 4
+                break
               end
             end
           end
@@ -231,8 +269,9 @@ module VagrantPlugins
           netOpts = ""
           networkID = 0
           for element in @guestvm_network do
-            if (config.debug =~ %r{true}i)
-              puts "guestvm_network[#{networkID}]: #{element}"
+            if config.debug =~ %r{true}i
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: "Network[#{networkID}]      : #{element}")
             end
             new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
             new_vmx_contents << "ethernet#{networkID}.present = \"TRUE\"\n"
@@ -419,12 +458,13 @@ module VagrantPlugins
                 "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
                 "#{resource_pool}"
 
-          #  Security bug if unremarked! Password will be exposed in log file.
-          if (config.debug =~ %r{password}i)
+          #
+          #  Security alert! If password debugging is enabled, Password will
+          #  be exposed in log file.
+          if config.debug =~ %r{password}i
             @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
             puts "ovftool command: #{ovf_cmd}"
-          end
-          if (config.debug =~ %r{true}i)
+          elsif config.debug =~ %r{true}i
             ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
             puts "ovftool command: #{ovf_cmd_nopw}"
           end
@@ -433,8 +473,9 @@ module VagrantPlugins
           end
 
           # VMX file is not needed any longer. Delete it
-          if (config.debug =~ %r{true}i)
-            puts "Keeping file: #{new_vmx_file}"
+          if config.debug =~ %r{true}i
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Keeping file    : #{new_vmx_file}")
           else
             File.delete(new_vmx_file)
           end
@@ -442,7 +483,7 @@ module VagrantPlugins
           #
           #  Re-open the network connection to get VMID
           #
-          Net::SSH.start( config.esxi_hostname, config.esxi_username,
+          Net::SSH.start(config.esxi_hostname, config.esxi_username,
             password:                   $esxi_password,
             port:                       config.esxi_hostport,
             keys:                       config.esxi_private_keys,
@@ -461,7 +502,7 @@ module VagrantPlugins
 
             env[:machine].id = vmid.to_i
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "VMID: #{env[:machine].id}")
+                                 message: "VMID            : #{env[:machine].id}")
 
             #
             #   -=-=-=-=-=-=-
@@ -478,7 +519,7 @@ module VagrantPlugins
 
             #  Get vmx file in memory
             esxi_orig_vmx_file = ssh.exec!("cat #{dst_vmx_file} 2>/dev/null")
-            if (config.debug =~ %r{vmx}i)
+            if config.debug =~ %r{vmx}i
               puts "orig vmx: #{esxi_orig_vmx_file}"
               puts "\n\n"
             end
@@ -597,7 +638,7 @@ module VagrantPlugins
 
             #  If there was changes, update esxi
             if vmx_need_change_flag == true
-              if (config.debug =~ %r{vmx}i)
+              if config.debug =~ %r{vmx}i
                 puts "new vmx: #{new_vmx_contents}"
                 puts "\n\n"
               end
@@ -614,8 +655,9 @@ module VagrantPlugins
               end
               ssh.loop
             else
-              if (config.debug =~ %r{vmx}i)
-                puts "no changes requried to vmx file"
+              if config.debug =~ %r{vmx}i
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'ESXi vmx file    : Unmodified')
               end
             end
           end
