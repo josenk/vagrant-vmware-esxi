@@ -36,8 +36,8 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: 'Attempting to package')
 
-            if (config.allow_overwrite =~ %r{true}i) ||
-               (config.allow_overwrite =~ %r{yes}i)
+            if (config.local_allow_overwrite =~ %r{true}i) ||
+               (config.local_allow_overwrite =~ %r{yes}i)
               overwrite_opts = '--overwrite'
             else
               overwrite_opts = nil
@@ -53,7 +53,7 @@ module VagrantPlugins
             if File.exists?("#{boxname}.box") && overwrite_opts.nil?
               raise Errors::GeneralError,
                     message: "#{boxname}.box already exists.  Set \n"\
-                             "  allow_overwrite='True' in Vagrantfile for force."
+                             "  local_allow_overwrite='True' in Vagrantfile for force."
             end
 
             # Find a tar/bsdtar

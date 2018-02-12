@@ -85,9 +85,9 @@ module VagrantPlugins
               $esxi_password = ''
               esxi_password_key = config.esxi_password.gsub(/key:/i, '').chomp
               if esxi_password_key.empty?
-                config.esxi_private_keys = config.system_private_keys_path
+                config.local_private_keys = config.system_private_keys_path
               else
-                config.esxi_private_keys = esxi_password_key
+                config.local_private_keys = esxi_password_key
               end
             else
               # Use plain text password from config
@@ -109,8 +109,8 @@ module VagrantPlugins
             '*', '%2a').gsub('?', '%3f').gsub(\
             '$', '%24')
 
-          @logger.info('vagrant-vmware-esxi, connect_esxi: esxi_private_keys: '\
-                       "#{config.esxi_private_keys}")
+          @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
+                       "#{config.local_private_keys}")
 
           #
           #  Test ESXi host connectivity
@@ -119,7 +119,7 @@ module VagrantPlugins
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
-              keys:                       config.esxi_private_keys,
+              keys:                       config.local_private_keys,
               timeout:                    20,
               number_of_password_prompts: 0,
               non_interactive:            true
@@ -149,7 +149,7 @@ module VagrantPlugins
             elsif config.esxi_password =~ %r{^file:}i
               access_error_message = "file:#{esxi_password_file}"
             elsif config.esxi_password =~ %r{^key:}i
-              access_error_message = "key:#{config.esxi_private_keys}"
+              access_error_message = "key:#{config.local_private_keys}"
             else
               access_error_message = 'password in Vagrantfile'
             end

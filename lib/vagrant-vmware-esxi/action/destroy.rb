@@ -36,7 +36,7 @@ module VagrantPlugins
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
-              keys:                       config.esxi_private_keys,
+              keys:                       config.local_private_keys,
               timeout:                    20,
               number_of_password_prompts: 0,
               non_interactive:            true

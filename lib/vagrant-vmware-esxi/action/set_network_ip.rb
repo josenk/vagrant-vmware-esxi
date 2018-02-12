@@ -29,8 +29,8 @@ module VagrantPlugins
           config = env[:machine].provider_config
 
           #  Number of nics configured
-          if config.virtual_network.is_a? Array
-            number_of_adapters = config.virtual_network.count
+          if config.esxi_virtual_network.is_a? Array
+            number_of_adapters = config.esxi_virtual_network.count
           else
             number_of_adapters = 1
           end
@@ -86,7 +86,7 @@ module VagrantPlugins
                     interface: index,
                     type: :static,
                     use_dhcp_assigned_default_route: options[:use_dhcp_assigned_default_route],
-                    mac_address: options[:mac],
+                    guest_mac_address: options[:mac],
                     ip: options[:ip],
                     netmask: netmask,
                     gateway: options[:gateway]
@@ -97,14 +97,14 @@ module VagrantPlugins
                     interface: index,
                     type: :dhcp,
                     use_dhcp_assigned_default_route: options[:use_dhcp_assigned_default_route],
-                    mac_address: options[:mac]
+                    guest_mac_address: options[:mac]
                   }
                   ip_msg = 'dhcp'
                   netmask = ''
                 end
                 networks_to_configure << network
                 env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: "Configuring     : #{ip_msg}#{netmask} on #{config.virtual_network[index]}")
+                                     message: "Configuring     : #{ip_msg}#{netmask} on #{config.esxi_virtual_network[index]}")
               end
             end
 

@@ -8,70 +8,92 @@ module VagrantPlugins
       attr_accessor :esxi_hostport
       attr_accessor :esxi_username
       attr_accessor :esxi_password
-      attr_accessor :esxi_private_keys
-      attr_accessor :ssh_username
-      attr_accessor :private_key_path
-      attr_accessor :vmname
-      attr_accessor :vmname_prefix
-      attr_accessor :guestos
-      attr_accessor :vm_disk_store
-      attr_accessor :vm_disk_type
-      attr_accessor :virtual_network
-      attr_accessor :nic_type
-      attr_accessor :mac_address
-      attr_accessor :resource_pool
-      attr_accessor :memsize
-      attr_accessor :numvcpus
-      attr_accessor :virtualhw_version
-      attr_accessor :custom_vmx_settings
-      attr_accessor :allow_overwrite
+      attr_accessor :esxi_disk_store
+      attr_accessor :esxi_virtual_network
+      attr_accessor :esxi_resource_pool
+      attr_accessor :guest_username
+      attr_accessor :guest_name
+      attr_accessor :guest_name_prefix
+      attr_accessor :guest_guestos
+      attr_accessor :guest_disk_type
+      attr_accessor :guest_nic_type
+      attr_accessor :guest_mac_address
+      attr_accessor :guest_memsize
+      attr_accessor :guest_numvcpus
+      attr_accessor :guest_virtualhw_version
+      attr_accessor :guest_snapshot_includememory
+      attr_accessor :guest_snapshot_quiesced
+      attr_accessor :guest_custom_vmx_settings
+      attr_accessor :local_private_keys
+      attr_accessor :local_allow_overwrite
+      attr_accessor :local_lax
+      attr_accessor :local_private_keys_path
       attr_accessor :debug
-      attr_accessor :lax
-      attr_accessor :system_private_keys_path
-      attr_accessor :supported_virtualhw_versions
-      attr_accessor :supported_vm_disk_types
-      attr_accessor :supported_nic_types
-      attr_accessor :supported_guestos
+      attr_accessor :supported_guest_virtualhw_versions
+      attr_accessor :supported_guest_disk_types
+      attr_accessor :supported_guest_nic_types
+      attr_accessor :supported_guest_guestos
+
+      #
+      #  legacy (1.x) config entries
+      attr_accessor :esxi_private_keys   # esxi_password
+      attr_accessor :ssh_username        # guest_username
+      attr_accessor :vmname              # guest_name
+      attr_accessor :vmname_prefix       # guest_name_prefix
+      attr_accessor :guestos             # guest_guestos
+      attr_accessor :vm_disk_store       # esxi_disk_store
+      attr_accessor :vm_disk_type        # guest_disk_type
+      attr_accessor :virtual_network     # esxi_virtual_network
+      attr_accessor :nic_type            # guest_nic_type
+      attr_accessor :mac_address         # guest_mac_address
+      attr_accessor :resource_pool       # esxi_resource_pool
+      attr_accessor :memsize             # guest_memsize
+      attr_accessor :numvcpus            # guest_numvcpus
+      attr_accessor :virtualhw_version   # guest_virtualhw_version
+      attr_accessor :custom_vmx_settings # guest_custom_vmx_settings
+      attr_accessor :allow_overwrite     # local_allow_overwrite
+      attr_accessor :lax                 # local_lax
 
       def initialize
         @esxi_hostname = nil
         @esxi_hostport = 22
         @esxi_username = 'root'
         @esxi_password = nil
-        @esxi_private_keys = UNSET_VALUE
-        @ssh_username = 'vagrant'
-        @private_key_path = UNSET_VALUE
-        @vmname = nil
-        @vmname_prefix = 'V-'
-        @guestos = nil
-        @vm_disk_store = nil
-        @vm_disk_type = nil
-        @virtual_network = nil
-        @nic_type = nil
-        @mac_address = ["","","",""]
-        @resource_pool = nil
-        @memsize = UNSET_VALUE
-        @numvcpus = UNSET_VALUE
-        @virtualhw_version = nil
-        @custom_vmx_settings = UNSET_VALUE
-        @allow_overwrite = 'False'
+        @esxi_disk_store = nil
+        @esxi_virtual_network = nil
+        @esxi_resource_pool = nil
+        @guest_username = 'vagrant'
+        @guest_name = nil
+        @guest_name_prefix = 'V-'
+        @guest_guestos = nil
+        @guest_disk_type = nil
+        @guest_nic_type = nil
+        @guest_mac_address = ["","","",""]
+        @guest_memsize = nil
+        @guest_numvcpus = nil
+        @guest_virtualhw_version = nil
+        @guest_snapshot_includememory = 'False'
+        @guest_snapshot_quiesced = 'False'
+        @guest_custom_vmx_settings = nil
+        @local_private_keys = nil
+        @local_allow_overwrite = 'False'
+        @local_lax = 'False'
         @debug = 'False'
-        @lax = 'False'
         @system_private_keys_path = [
           '~/.ssh/id_rsa',
           '~/.ssh/id_ecdsa',
           '~/.ssh/id_ed25519',
           '~/.ssh/id_dsa'
         ]
-        @supported_virtualhw_versions = [
+        @supported_guest_virtualhw_versions = [
           4,7,8,9,10,11,12,13
         ]
-        @supported_vm_disk_types = [
+        @supported_guest_disk_types = [
           'thin',
           'thick',
           'eagerzeroedthick'
         ]
-        @supported_nic_types = [
+        @supported_guest_nic_types = [
           'vlance',
           'flexible',
           'e1000',
@@ -80,7 +102,7 @@ module VagrantPlugins
           'vmxnet2',
           'vmxnet3'
         ]
-        @supported_guestos = [
+        @supported_guest_guestos = [
           'asianux3-64',
           'asianux3',
           'asianux4-64',
@@ -230,25 +252,132 @@ module VagrantPlugins
           'winXPPro-64',
           'winXPPro'
         ]
+
+        # Legacy (1.x)
+        @esxi_private_keys = nil
+        @ssh_username = nil
+        @vmname = nil
+        @vmname_prefix = nil
+        @guestos = nil
+        @vm_disk_store = nil
+        @vm_disk_type = nil
+        @virtual_network = nil
+        @nic_type = nil
+        @mac_address = nil
+        @resource_pool = nil
+        @memsize = nil
+        @numvcpus = nil
+        @virtualhw_version = nil
+        @custom_vmx_settings = nil
+        @allow_overwrite = nil
+        @lax = nil
       end
 
       def finalize!
-        @private_key_path = nil if @private_key_path == UNSET_VALUE
-        @ssh_username = nil if @ssh_username == UNSET_VALUE
-        if @virtual_network.is_a? String
-          @virtual_network = [@virtual_network]
+
+        #  Migrate legacy(1.x) parms to 2.0
+        migrate_msg = ""
+        unless @esxi_private_keys.nil?
+          migrate_msg << "You should migrate legacy option esxi_private_keys to esxi_password = \"key:\" in Vagrant file.\n"
         end
-        if @virtual_network.nil?
-          @virtual_network = ['--NotSet--']
+        unless @ssh_username.nil?
+          migrate_msg << "You should migrate legacy option ssh_username to guest_username in Vagrant file.\n"
+          @guest_username = @ssh_username.dup
         end
-        @esxi_private_keys = @system_private_keys_path if @esxi_private_keys == UNSET_VALUE
-        if @lax =~ /true/i
-          @lax = 'True'
+        unless @vmname.nil?
+          migrate_msg << "You should migrate legacy option vmname to guest_name in Vagrant file.\n"
+          @guest_name = @vmname.dup
+        end
+        unless @vmname_prefix.nil?
+          migrate_msg << "You should migrate legacy option vmname_prefix to guest_name_prefix in Vagrant file.\n"
+          @guest_name_prefix = @vmname_prefix.dup
+        end
+        unless @guestos.nil?
+          migrate_msg << "You should migrate legacy option guestos to guest_guestos in Vagrant file.\n"
+          @guest_guestos = @guestos.dup
+        end
+        unless @vm_disk_store.nil?
+          migrate_msg << "You should migrate legacy option vm_disk_store to esxi_disk_store in Vagrant file.\n"
+          @esxi_disk_store = @vm_disk_store.dup
+        end
+        unless @vm_disk_type.nil?
+          migrate_msg << "You should migrate legacy option vm_disk_type to guest_disk_type in Vagrant file.\n"
+          @guest_disk_type = @vm_disk_type.dup
+        end
+        unless @virtual_network.nil?
+          migrate_msg << "You should migrate legacy option virtual_network to esxi_virtual_network in Vagrant file.\n"
+          @esxi_virtual_network = @virtual_network.dup
+        end
+        unless @nic_type.nil?
+          migrate_msg << "You should migrate legacy option nic_type to guest_nic_type in Vagrant file.\n"
+          @guest_nic_type = @nic_type.dup
+        end
+        unless @mac_address.nil?
+          migrate_msg << "You should migrate legacy option mac_address to guest_mac_address in Vagrant file.\n"
+          @guest_mac_address = @mac_address.dup
+        end
+        unless @resource_pool.nil?
+          migrate_msg << "You should migrate legacy option resource_pool to esxi_resource_pool in Vagrant file.\n"
+          @esxi_resource_pool = @resource_pool.dup
+        end
+        unless @memsize.nil?
+          migrate_msg << "You should migrate legacy option memsize to guest_memsize in Vagrant file.\n"
+          @guest_memsize = @memsize.dup
+        end
+        unless @numvcpus.nil?
+          migrate_msg << "You should migrate legacy option numvcpus to guest_numvcpus in Vagrant file.\n"
+          @guest_numvcpus = @numvcpus.dup
+        end
+        unless @virtualhw_version.nil?
+          migrate_msg << "You should migrate legacy option virtualhw_version to guest_virtualhw_version in Vagrant file.\n"
+          @guest_virtualhw_version = @virtualhw_version.dup
+        end
+        unless @custom_vmx_settings.nil?
+          migrate_msg << "You should migrate legacy option custom_vmx_settings to guest_custom_vmx_settings in Vagrant file.\n"
+          @guest_custom_vmx_settings = @custom_vmx_settings.dup
+        end
+        unless @allow_overwrite.nil?
+          migrate_msg << "You should migrate legacy option allow_overwrite to local_allow_overwrite in Vagrant file.\n"
+          @local_allow_overwrite = @allow_overwrite.dup
+        end
+        unless @lax.nil?
+          migrate_msg << "You should migrate legacy option lax to local_lax in Vagrant file.\n"
+          @local_lax = @lax.dup
+        end
+
+        if $migrate_msg_flag.nil?
+          $migrate_msg_flag = 'True'
+          puts migrate_msg
+        end
+
+        @guest_username = nil if @guest_username == UNSET_VALUE
+
+        @esxi_virtual_network = [@esxi_virtual_network] if @esxi_virtual_network.is_a? String
+
+        @esxi_virtual_network = ['--NotSet--'] if @esxi_virtual_network.nil?
+
+        @local_private_keys = @system_private_keys_path if @local_private_keys == nil
+
+        # @guest_virtualhw_version = @guest_virtualhw_version.to_i unless @guest_virtualhw_version.nil?
+
+        if @local_lax =~ /true/i
+          @local_lax = 'True'
         else
-          @lax = 'False'
-        @virtualhw_version = @virtualhw_version.to_i unless @virtualhw_version.nil?
+          @local_lax = 'False'
+
+        end
+
+        if @guest_snapshot_includememory =~ /true/i
+          @guest_snapshot_includememory = 'includeMemory'
+        else
+          @guest_snapshot_includememory = ''
        end
-     end
+       if @guest_snapshot_quiesced =~ /true/i
+         @guest_snapshot_quiesced = 'quiesced'
+       else
+         @guest_snapshot_quiesced = ''
+       end
+      end
     end
   end
 end

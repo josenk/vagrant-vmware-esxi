@@ -39,7 +39,7 @@ Requirements
 3. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
 4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
-5. You should know how to use vagrant in general...
+5. In general, you should know how to use vagrant and esxi...
 
 Why this plugin?
 ----------------
@@ -60,6 +60,9 @@ How to use and configure a Vagrantfile
 1. `vagrant init`
 1. `vi Vagrantfile`  # See below to setup access your ESXi host and to set some preferences.
 ```ruby
+#
+#  Fully documented Vagrantfile available
+#  in the wiki:  https://github.com/josenk/vagrant-vmware-esxi/wiki
 Vagrant.configure('2') do |config|
 
   #  Box, Select any box created for VMware that is compatible with
@@ -85,19 +88,17 @@ Vagrant.configure('2') do |config|
   #config.vm.box = 'puphpet/debian75-x64'
 
 
-  #  Use rsync or NFS synced folders. (or disable them)
+  #  Use rsync and NFS synced folders. (or disable them)
   config.vm.synced_folder('.', '/vagrant', type: 'rsync')
   config.vm.synced_folder('.', '/vagrant', type: 'nfs', disabled: true)
 
   #  Vagrant can set a static IP for the additional network interfaces.  Use
   #  public_network or private_network to manually set a static IP and
   #  netmask.  ESXi doesn't use the concept of public or private networks so
-  #  both are valid here.   'bridge' will be ignored.  Netmask is optional if
-  #  you are using standard Class A/B/C networks. The primary network
-  #  interface is considered the management interface to Vagrant and cannot
-  #  be changed.  It's highly recommended to correctly configure a
-  #  new esxi.virtual_network for each static IP you configure.
-  #    *** Invalid settings could cause 'vagrant up' to fail ***   
+  #  both are valid here.  The primary network interface is considered the
+  #  "vagrant management" interface and cannot be changed,
+  #  so you can specify 3 entries here!
+  #    *** Invalid settings could cause 'vagrant up' to fail ***
   #config.vm.network 'private_network', ip: '192.168.10.170', netmask: '255.255.255.0'
   #config.vm.network 'private_network', ip: '192.168.11.170'
   #config.vm.network 'public_network', ip: '192.168.12.170'
@@ -108,170 +109,91 @@ Vagrant.configure('2') do |config|
   config.vm.provider :vmware_esxi do |esxi|
 
     #  REQUIRED!  ESXi hostname/IP
-    #    You MUST specify a esxi_hostname or IP, uless you
-    #    were lucky enough to name your esxi host 'esxi'.  :-)
     esxi.esxi_hostname = 'esxi'
 
     #  ESXi username
-    #    Default is 'root'.
     esxi.esxi_username = 'root'
 
-    #
-    #  IMPORTANT!  ESXi password.
-    #  *** NOTES about esxi_passwords & ssh keys!! ***
-    #
+    #  IMPORTANT!  Set ESXi password.
     #    1) 'prompt:'
-    #       This will prompt you for the esxi password each time you
-    #       run a vagrant command.  This is the default.
-    #
     #    2) 'file:'  or  'file:my_secret_file'
-    #       This will read a plain text file containing the esxi
-    #       password.   The default filename is ~/.esxi_password, or
-    #       you can specify any filename after the colon ':'.
-    #
     #    3) 'env:'  or 'env:my_secret_env_var'
-    #        This will read the esxi password via an environment
-    #        variable.  The default is $esxi_password, but you can
-    #        specify any environment variable after the colon ':'.
+    #    4) 'key:'  or  key:~/.ssh/some_ssh_private_key'
+    #    5) or esxi.esxi_password = 'my_esxi_password'
     #
-    #            $ export esxi_password='my_secret_password'
-    #
-    #    4)  'key:'  or  key:~/.ssh/some_ssh_private_key'
-    #        Use ssh keys.  The default is to use the system private keys,
-    #        or you specify a custom private key after the colon ':'.
-    #
-    #        To test connectivity. From your command line, you should be able to
-    #        run following command without an error and get an esxi prompt.
-    #
-    #            $ ssh root@ESXi_IP_ADDRESS
-    #
-    #        The ssh connections to esxi will try the ssh private
-    #        keys.  However the ovftool does NOT!  To make
-    #        vagrant fully password-less, you will need to use other
-    #        options. (set the password, use 'env:' or 'file:')
-    #
-    #    5)  esxi.esxi_password = 'my_esxi_password'
-    #        Enter your esxi passowrd in clear text here...  This is the
-    #        least secure method because you may share this Vagrant file without
-    #        realizing the password is in clear text.
-    #
-    #  IMPORTANT!  Set the ESXi password or authentication method..
     esxi.esxi_password = 'prompt:'
 
     #  SSH port.
-    #    Default port 22.
     #esxi.esxi_hostport = 22
 
     #  HIGHLY RECOMMENDED!  Virtual Network
-    #    You should specify a Virtual Network. Vagrant needs to know which
-    #    'ESXi virtual_network' is used for each nic in your VM.
-    #    If it's not specified, the default is to use the first ESXi
-    #    virtual_network found.  You can specify up to 4 virtual networks
-    #    using an array format.  NOTE: This does not configure IP addresses.
-    #    For most OS's DHCP is the default, so you will need a DHCP server for
-    #    each ESXi virtual network.  To set a static IP address on the
-    #    second, third or 4th interface, see above 'config.vm.network'.
-    #    
-    #esxi.virtual_network = ['vmnet1','vmnet2','vmnet3','vmnet4']
-
-    #  OPTIONAL & RISKY.  Specify up to 4 MAC addresses
-    #    The default is for ovftool to automatically generate a MAC address.
-    #    You can specify an array of MAC addresses using upper or lower case,
-    #    separated by colons ':'.  I highly recommend using vmware's OUI
-    #    of '00:50:56' or '00:0c:29'.  I consider this option a risk
-    #    because you may reuse a Vagrantfile without realizing you are
-    #    duplicating the MAC address.
-    #    *** Invalid settings could cause 'vagrant up' to fail ***  
-    #esxi.mac_address = ['00:50:56:aa:bb:cc', '00:50:56:01:01:01','00:50:56:02:02:02','00:50:56:BE:AF:01' ]
-
-    #   OPTIONAL & RISKY.  Specify a nic_type
-    #     The default is to have the virtual nic hw type automatically
-    #     determined by the ovftool.  However, you can override it by specifying
-    #     it here.  This is a global setting.  (all 4 virtual networks will be set)
-    #     The validated list of nic_types are 'e1000', 'e1000e', 'vmxnet',
-    #     'vmxnet2', 'vmxnet3', 'Vlance', and 'Flexible'.  I consider this
-    #     risky because I don't validate if the specified nic_type is
-    #     compatible with your OS version.
-    #    *** Invalid settings could cause 'vagrant up' to fail ***  
-    #esxi.nic_type = 'e1000'
+    #    You should specify a Virtual Network!  If it's not specified, the
+    #    default is to use the first found.  You can specify up to 4 virtual
+    #    networks using an array format.
+    #esxi.esxi_virtual_network = ['vmnet1','vmnet2','vmnet3','vmnet4']
 
     #  OPTIONAL.  Specify a Disk Store
-    #    If it's not specified, the Default is to use the least used Disk Store.
-    #esxi.vm_disk_store = 'DS_001'
-
-    #  OPTIONAL. Specify a disk type.
-    #    If unspecified, the default is 'thin', Otherwise, you can set to:
-    #    'thin', 'thick', or 'eagerzeroedthick'
-    #esxo.vm_disk_type = 'thick'
-
-    #  OPTIONAL.  Guest VM name to use.
-    #    The Default will be automatically generated.  It will be based on
-    #    the vmname_prefix (see below), your hostname & username and path.
-    #    Otherwise you can set a fixed guest VM name here.
-    #esxi.vmname = 'Custom-Guest-VM_Name'
-
-    #  OPTIONAL.  When automatically naming VMs, use
-    #    this prifix.
-    #esxi.vmname_prefix = 'V-'
-
-    #  OPTIONAL.  Memory size override
-    #    The default is to use the memory size specified in the
-    #    vmx file, however you can specify a new value here.
-    #esxi.memsize = '2048'
-
-    #  OPTIONAL.  Virtual CPUs override
-    #    The default is to use the number of virtual cpus specified
-    #     in the vmx file, however you can specify a new value here.
-    #esxi.numvcpus = '2'
+    #esxi.esxi_disk_store = 'DS_001'
 
     #  OPTIONAL.  Resource Pool
-    #    If unspecified, the default is to create VMs in the 'root'.  You can
-    #    specify a resource pool here to partition memory and cpu usage away
-    #    from other systems on your esxi host.  The resource pool must
-    #    already exist and have the proper permissions set.
-    #     
     #     Vagrant will NOT create a Resource pool it for you.
-    #esxi.resource_pool = '/Vagrant'
+    #esxi.esxi_resource_pool = '/Vagrant'
 
-    #  RISKY. guestos
-    #    if unspecified, the default will be generated by the OVFTool.  Most
-    #    of the time, you don't need to change this unless ovftool doesn't get
-    #    the correct information from the box.  See my page on supported guestos
-    #    types for ESXI.
-    #    https://github.com/josenk/vagrant-vmware-esxi/ESXi_guestos_types.md
-    #esxi.guestos = 'centos7-64'
+    #  OPTIONAL.  Guest VM name to use.
+    #    The Default will be automatically generated.
+    #esxi.guest_name = 'Custom-Guest-VM_Name'
 
-    #  OPTIONAL. virtualhw_version
-    #    If unspecified, the default will be generated by the OVFTool.  Most
-    #    of the time, you don't need to change this unless you are using very
-    #    advanced custom vmx settings that require it.
+    #  OPTIONAL.  When automatically naming VMs, use this prifix.
+    #esxi.guest_name_prefix = 'V-'
+
+
+    #  OPTIONAL.  Set the guest username login.  The default is 'vagrant'.
+    #esxi.guest_username = 'vagrant'
+
+    #  OPTIONAL.  Memory size override
+    #esxi.guest_memsize = '2048'
+
+    #  OPTIONAL.  Virtual CPUs override
+    #esxi.guest_numvcpus = '2'
+
+    #  OPTIONAL & RISKY.  Specify up to 4 MAC addresses
+    #    The default is ovftool to automatically generate a MAC address.
+    #    You can specify an array of MAC addresses using upper or lower case,
+    #    separated by colons ':'.
+    #esxi.guest_mac_address = ['00:50:56:aa:bb:cc', '00:50:56:01:01:01','00:50:56:02:02:02','00:50:56:BE:AF:01' ]
+
+    #   OPTIONAL & RISKY.  Specify a guest_nic_type
+    #     The validated list of guest_nic_types are 'e1000', 'e1000e', 'vmxnet',
+    #     'vmxnet2', 'vmxnet3', 'Vlance', and 'Flexible'.
+    #esxi.guest_nic_type = 'e1000'
+
+    #  OPTIONAL. Specify a disk type.
+    #    If unspecified, it will be set to 'thin'.  Otherwise, you can set to
+    #    'thin', 'thick', or 'eagerzeroedthick'
+    #esxi.guest_disk_type = 'thick'
+
+    #  OPTIONAL. specify snapshot options.
+    #esxi.guest_snapshot_includememory = 'true'
+    #esxi.guest_snapshot_quiesced = 'true'
+
+    #  RISKY. guest_guestos
+    #    https://github.com/josenk/vagrant-vmware-esxi/ESXi_guest_guestos_types.md
+    #esxi.guest_guestos = 'centos-64'
+
+    #  OPTIONAL. guest_virtualhw_version
     #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12 & 13.
-    #esxi.virtualhw_version = '11'
+    #esxi.guest_virtualhw_version = '9'
 
-    #  RISKY. custom_vmx_settings
-    #    You can specify an array of custom vmx settings to add (or to override
-    #    existing settings).   ****  I don't do any validation, so if you
-    #    make any errors, it will not be caught ***   This is the place you would
-    #    add any special settings you need in your vmx.  (Like adding a USB, DVD
-    #    CPU settings, etc...).
-    #    ex vhv.enable = 'TRUE' will be appended, floppy0.presend = 'TRUE' will be modified
-    #esxi.custom_vmx_settings = [['vhv.enable','TRUE'], ['floppy0.present','TRUE']]
+    #  RISKY. guest_custom_vmx_settings
+    #esxi.guest_custom_vmx_settings = [['vhv.enable','TRUE'], ['floppy0.present','TRUE']]
 
-    #  OPTIONAL. lax
-    #    If unspecified, the ovftool option --lax is disabled.   If you are
-    #    importing ovf boxes that generate errors, you may want to enable lax
-    #    to convert the errors to warning. (then the import could succeed)
-    #esxi.lax = 'true'
+    #  OPTIONAL. local_lax
+    #esxi.local_lax = 'true'
 
     #  DANGEROUS!  Allow Overwrite
     #    If unspecified, the default is to produce an error if overwriting
     #    vm's and packages.
-    #    Set this to 'True' will overwrite existing VMs (with the same name)
-    #    when you run vagrant up.   ie,  if the vmname already exists,
-    #    it will be destroyed, then over written...  This is helpful
-    #    if you have a VM that became an orphan (vagrant lost association).
-    #    This will also overwrite your box when using vagrant package.
-    #esxi.allow_overwrite = 'True'
+    #esxi.local_allow_overwrite = 'True'
 
     #  Plugin debug output.
     #    Send bug reports with debug output...
@@ -280,6 +202,28 @@ Vagrant.configure('2') do |config|
   end
 end
 ```
+
+Upgrading from vagrant-vmware-esxi 1.x.x
+----------------------------------------
+The following Vagrantfile parameters have been renamed for clarity.  The plugin still recognizes these legacy parameters, however it's recommended to migrate to the 2.x parameters.
+* esxi_private_keys --> esxi_password = "key:"
+* vm_disk_store --> esxi_disk_store
+* virtual_network --> esxi_virtual_network
+* resource_pool --> esxi_resource_pool
+* vmname --> guest_name
+* vmname_prefix --> guest_name_prefix
+* ssh_username --> guest_username
+* memsize --> guest_memsize
+* numvcpus --> guest_numvcpus
+* vm_disk_type --> guest_disk_type
+* nic_type --> guest_nic_type
+* mac_address --> guest_mac_address
+* guestos --> guest_guestos
+* virtualhw_version --> guest_virtualhw_version
+* custom_vmx_settings --> guest_custom_vmx_settings
+* lax --> local_lax
+* allow_overwrite --> local_allow_overwrite
+
 
 Basic usage
 -----------
@@ -301,25 +245,34 @@ Basic usage
 Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
-* Invalid settings (bad IP address, netmask, MAC address, custom_vmx_settings) could cause 'vagrant up' to fail.  Review your ESXi logs to help debug why it failed.
-* Cleanup doesn't always destroy a VM that has been partially built.  Use the allow_overwrite = 'True' option if you need to force a rebuild, or delete the vm using the VSphere client.
+* Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review your ESXi logs to help debug why it failed.
+* Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 * In general I find NFS synced folders a little 'flaky'...
 
 
 Version History
 ---------------
+* 2.0.1 Updated version:
+      Most Vagrantfile options have been renamed to be consistent and for clarity.
+      vagrant up, more organized summary by esxi/guest options.
+      Lots of Code cleanup.
+      Add support for snapshot options (includeMemory & quiesced)
+      Snapshot save/push adds a description.
+
 * 1.5.1 Fix:
       Improve debug output.
       Fix password encoding for @ character.
       Automatically add a virtual network when configuring a public_network or private_network.
+
 * 1.5.0 Add support for:
-      Specify custom_vmx_settings (to add or modify vmx settings).
+      Specify guest_custom_vmx_settings (to add or modify vmx settings).
       Specify Virtual HW version.
       Allow $ in Password.
       Disk types (thick, thin, eagerzeroedthick).
       Specify a guestOS type (see list above).
-      Relaxed ovftool setting (--lax), to allow importing strange ovf boxes.
+      Relocal_laxed ovftool setting (--local_lax), to allow importing strange ovf boxes.
+
 * 1.4.0 Add support to set MAC and IP addresses for network interfaces.
 * 1.3.2 Fix, Don't timeout ssh connection when ovftool takes a long time to upload image.
 * 1.3.0 Add support to get esxi password from env, from a file or prompt.
