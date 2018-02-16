@@ -153,6 +153,14 @@ Vagrant.configure('2') do |config|
     #    'thin', 'thick', or 'eagerzeroedthick'
     #esxi.guest_disk_type = 'thick'
 
+    #  OPTIONAL.  Create additional storage for guests.
+    #    You can specify an array of upto 14 virtual disk sizes (in GB) that you
+    #    would like the provider to create once the guest has been created.  The
+    #    virtual disks will be created and added to the guest, however you must
+    #    provision it.  The disks can be used for lvm, partitioned, raw disk
+    #    for data bases, etc...
+    #esxi.guest_storage = [10,20]
+
     #  OPTIONAL & RISKY.  Specify up to 4 MAC addresses
     #    The default is ovftool to automatically generate a MAC address.
     #    You can specify an array of MAC addresses using upper or lower case,

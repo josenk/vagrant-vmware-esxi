@@ -325,6 +325,8 @@ module VagrantPlugins
                   new_guest_mac_address[index] = ''
                 else
                   new_guest_mac_address[index] = "invalid"
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "WARNING         : Ignored invalid mac address at index[#{index}]")
                 end
               end
             end
@@ -359,6 +361,24 @@ module VagrantPlugins
                                             "found, using \"thin\"")
               guest_disk_type = "thin"
             end
+          end
+
+          #  Validate guest Storage
+          if config.guest_storage.is_a? Array
+            new_guest_storage = []
+            0.upto(config.guest_storage.count - 1) do |index|
+              store_size = config.guest_storage[index].to_i
+              if store_size < 1
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'WARNING         : Ignored invalid '\
+                                     "storage size #{config.guest_storage[index]} at "\
+                                     "index[#{index}]")
+                new_guest_storage[index] = "invalid"
+              else
+                new_guest_storage[index] = store_size
+              end
+            end
+            config.guest_storage = new_guest_storage
           end
 
           #  Validate virtual HW levels
@@ -412,7 +432,7 @@ module VagrantPlugins
                                message: "CPUS            : #{desired_guest_numvcpus}")
           unless config.guest_mac_address[0].eql? ''
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Mac Address     : #{config.guest_mac_address}")
+                                 message: "Mac Address     : #{config.guest_mac_address[0..3]}")
           end
           unless guest_nic_type.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -421,6 +441,10 @@ module VagrantPlugins
           unless config.guest_disk_type.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Disk Type       : #{guest_disk_type}")
+          end
+          unless config.guest_storage.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Storage (GB)    : #{config.guest_storage[0..13]}")
           end
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Guest OS type   : #{config.guest_guestos}")
@@ -436,7 +460,8 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: 'Allow Overwrite : True')
           end
-
+          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                               message: "  --- Guest Build ---")
 
           #
           # Using ovftool, import vmx in box folder, export to ESXi server
@@ -477,7 +502,8 @@ module VagrantPlugins
           end
 
           #
-          #  Re-open the network connection to get VMID
+          #  Re-open the network connection to get VMID and do final adjustments
+          #  to vmx file.
           #
           Net::SSH.start(config.esxi_hostname, config.esxi_username,
             password:                   $esxi_password,
@@ -506,19 +532,81 @@ module VagrantPlugins
             dst_vmx = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |\
                     grep vmPathName|awk '{print $NF}'|sed 's/[\"|,]//g'")
 
-            dst_vmx_dir = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |"\
+            dst_vmx_ds = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |"\
                     'grep vmPathName|grep -oE "\[.*\]"')
 
+            dst_vmx_dir = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |\
+                    grep vmPathName|awk '{print $NF}'|awk -F'\/' '{print $1}'")
+
+
             dst_vmx_file = "/vmfs/volumes/"
-            dst_vmx_file << dst_vmx_dir.gsub('[','').gsub(']','').strip + "/"
+            dst_vmx_file << dst_vmx_ds.gsub('[','').gsub(']','').strip + "/"
+            esxi_guest_dir = dst_vmx_file + dst_vmx_dir.strip
             dst_vmx_file << dst_vmx
+
+            #  Create storage if required
+            if config.guest_storage.is_a? Array
+              index = -1
+              config.guest_storage.each do |store|
+                store_size = store.to_i
+                index += 1
+                if store_size == 0
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: "Creating Storage: Skipping --invalid-- at storage[#{index}]")
+                elsif index > 14
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: "Creating Storage: Skipping storage[#{index}], Maximum 14 devices exceeded...")
+                else
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: "Creating Storage: disk_#{index}.vmdk (#{store_size}GB)")
+
+                  #  Figure out what SCSI slots are used.
+                  r = ssh.exec!("vim-cmd vmsvc/device.getdevices #{machine.id}|"\
+                    "grep -A 30 vim.vm.device.VirtualDisk|"\
+                    "grep -e controllerKey -e unitNumber|grep -A 1 'controllerKey = 1000,'|"\
+                    "grep unitNumber|awk '{print $3}'|sed 's/,//g'")
+
+                  if r.length < 2
+                    raise Errors::ESXiError,
+                          message: "Unable to get guest storage configuration:\n"\
+                                   "  #{r}"\
+                                   '  Review ESXi logs for additional information!'
+                  end
+                  0.upto(15) do |slot|
+                    next if slot == 7
+                    if r !~ %r{^#{slot.to_s}$}i
+                      puts "Avail slot: #{slot}" if config.debug =~ %r{true}i
+                      guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
+
+                      cmd = "/bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} #{esxi_guest_dir}/disk_#{index}.vmdk"
+                      puts "cmd: #{cmd}" if config.debug =~ %r{true}i
+                      r = ssh.exec!(cmd)
+                      if r.exitstatus != 0
+                        raise Errors::ESXiError,
+                              message: "Unable to create guest storage (vmkfstools failed):\n"\
+                                       "  #{r}"\
+                                       '  Review ESXi logs for additional information!'
+                      end
+                      r = ssh.exec!("vim-cmd vmsvc/device.diskaddexisting #{env[:machine].id} "\
+                        "#{esxi_guest_dir}/disk_#{index}.vmdk 0 #{slot}")
+                      if r.exitstatus != 0
+                        raise Errors::ESXiError,
+                              message: "Unable to create guest storage (vmkfstools failed):\n"\
+                                       "  #{r}"\
+                                       '  Review ESXi logs for additional information!'
+                      end
+                      break
+                    end
+                  end
+                end
+              end
+            end
 
             #  Get vmx file in memory
             esxi_orig_vmx_file = ssh.exec!("cat #{dst_vmx_file} 2>/dev/null")
-            if config.debug =~ %r{vmx}i
-              puts "orig vmx: #{esxi_orig_vmx_file}"
-              puts "\n\n"
-            end
+
+            puts "orig vmx: #{esxi_orig_vmx_file}\n\n" if config.debug =~ %r{vmx}i
+
             if esxi_orig_vmx_file.exitstatus != 0
               raise Errors::ESXiError,
                     message: "Unable to read #{dst_vmx_file}"
@@ -574,8 +662,6 @@ module VagrantPlugins
                   elsif guest_mac_address == ''
                     new_vmx_contents << line
                   else
-                    env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                       message: "Ignored invalid mac address at index: #{nicindex}")
                     new_vmx_contents << line
                   end
                 end
@@ -656,6 +742,10 @@ module VagrantPlugins
                                      message: 'ESXi vmx file    : Unmodified')
               end
             end
+
+
+
+            # Done
           end
         end
       end

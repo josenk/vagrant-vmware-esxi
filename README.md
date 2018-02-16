@@ -21,14 +21,14 @@ Features and Compatibility
   * Automatic VM names are 'PREFIX-HOSTNAME-USERNAME-DIR'.
 * Multi machine capable.
 * Supports adding your VM to Resource Pools to partition CPU and memory usage from other VMs on your ESXi host.
-* suspend / resume.
-* snapshots.
+* suspend, resume, snapshots.
 * rsync & NFS using built-in Vagrant synced folders.
 * Provision using built-in Vagrant provisioner.
 * package your vm's into boxes.
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
 * Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
 * Disks provisioned using thin, thick or eagerzeroedthick.
+* Create additional guest storage (upto 14 virtual disks).
 * Specify GuestOS types, virtual HW version, or any custom vmx settings.
 
 Requirements
@@ -39,7 +39,7 @@ Requirements
 3. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
 4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
-5. In general, you should know how to use vagrant and esxi...
+5. In general, you should know how to use vagrant, esxi and some networking...
 
 Why this plugin?
 ----------------
@@ -172,6 +172,11 @@ Vagrant.configure('2') do |config|
     #    'thin', 'thick', or 'eagerzeroedthick'
     #esxi.guest_disk_type = 'thick'
 
+    #  OPTIONAL.  Create additional storage for guests.
+    #    You can specify an array of upto 14 virtual disk sizes (in GB) that you 
+    #    would like the provider to create once the guest has been created.
+    #esxi.guest_storage = [10,20]
+
     #  OPTIONAL. specify snapshot options.
     #esxi.guest_snapshot_includememory = 'true'
     #esxi.guest_snapshot_quiesced = 'true'
@@ -253,25 +258,28 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.0.2 Add support to add additional storage to guest vms.
+        Fix, encode (space) in esxi passwords.
+
 * 2.0.1 Updated version:
-      Most Vagrantfile options have been renamed to be consistent and for clarity.
-      vagrant up, more organized summary by esxi/guest options.
-      Lots of Code cleanup.
-      Add support for snapshot options (includeMemory & quiesced)
-      Snapshot save/push adds a description.
+        Most Vagrantfile options have been renamed to be consistent and for clarity.
+        vagrant up, more organized summary by esxi/guest options.
+        Lots of Code cleanup.
+        Add support for snapshot options (includeMemory & quiesced)
+        Snapshot save/push adds a description.
 
 * 1.5.1 Fix:
-      Improve debug output.
-      Fix password encoding for @ character.
-      Automatically add a virtual network when configuring a public_network or private_network.
+        Improve debug output.
+        Fix password encoding for @ character.
+        Automatically add a virtual network when configuring a public_network or private_network.
 
 * 1.5.0 Add support for:
-      Specify guest_custom_vmx_settings (to add or modify vmx settings).
-      Specify Virtual HW version.
-      Allow $ in Password.
-      Disk types (thick, thin, eagerzeroedthick).
-      Specify a guestOS type (see list above).
-      Relocal_laxed ovftool setting (--local_lax), to allow importing strange ovf boxes.
+        Specify guest_custom_vmx_settings (to add or modify vmx settings).
+        Specify Virtual HW version.
+        Allow $ in Password.
+        Disk types (thick, thin, eagerzeroedthick).
+        Specify a guestOS type (see list above).
+        Relocal_laxed ovftool setting (--local_lax), to allow importing strange ovf boxes.
 
 * 1.4.0 Add support to set MAC and IP addresses for network interfaces.
 * 1.3.2 Fix, Don't timeout ssh connection when ovftool takes a long time to upload image.

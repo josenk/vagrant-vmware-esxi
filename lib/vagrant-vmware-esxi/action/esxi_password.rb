@@ -107,7 +107,7 @@ module VagrantPlugins
             '/', '%2f').gsub('\\','%5c').gsub(\
             '"', '%22').gsub('\'','%27').gsub(\
             '*', '%2a').gsub('?', '%3f').gsub(\
-            '$', '%24')
+            '$', '%24').gsub(' ', '%20')
 
           @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
                        "#{config.local_private_keys}")

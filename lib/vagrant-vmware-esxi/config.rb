@@ -16,6 +16,7 @@ module VagrantPlugins
       attr_accessor :guest_name_prefix
       attr_accessor :guest_guestos
       attr_accessor :guest_disk_type
+      attr_accessor :guest_storage
       attr_accessor :guest_nic_type
       attr_accessor :guest_mac_address
       attr_accessor :guest_memsize
@@ -67,6 +68,7 @@ module VagrantPlugins
         @guest_name_prefix = 'V-'
         @guest_guestos = nil
         @guest_disk_type = nil
+        @guest_storage = nil
         @guest_nic_type = nil
         @guest_mac_address = ["","","",""]
         @guest_memsize = nil
@@ -351,6 +353,9 @@ module VagrantPlugins
         end
 
         @guest_username = nil if @guest_username == UNSET_VALUE
+
+        @guest_storage = [@guest_storage.to_i] if @guest_storage.is_a? String
+        @guest_storage = [@guest_storage] if @guest_storage.is_a? Integer
 
         @esxi_virtual_network = [@esxi_virtual_network] if @esxi_virtual_network.is_a? String
 
