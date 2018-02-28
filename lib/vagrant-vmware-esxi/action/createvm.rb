@@ -49,6 +49,7 @@ module VagrantPlugins
             # A guest_name has been set, so use it.
             desired_guest_name = config.guest_name.strip
           end
+          desired_guest_name = desired_guest_name[0..252].gsub(/_/,'-').gsub(/[^0-9A-Za-z\-\.]/i, '').strip
           @logger.info("vagrant-vmware-esxi, createvm: config.guest_name: #{config.guest_name}")
 
           #
@@ -514,10 +515,11 @@ module VagrantPlugins
             non_interactive:            true
           ) do |ssh|
             r = ssh.exec!(
-                    'vim-cmd vmsvc/getallvms |'\
-                    "grep \" #{desired_guest_name} \"|awk '{print $1}'")
+                    'vim-cmd vmsvc/getallvms 2>/dev/null | sort -n |'\
+                    "grep \"[0-9] * #{desired_guest_name} .*#{desired_guest_name}\"|"\
+                    "awk '{print $1}'|tail -1")
             vmid = r
-            if (vmid == '') || (r.exitstatus != 0)
+            if (vmid == '') || (vmid == '0') || (r.exitstatus != 0)
               raise Errors::ESXiError,
                     message: "Unable to register #{desired_guest_name}"
             end
@@ -578,7 +580,7 @@ module VagrantPlugins
                       puts "Avail slot: #{slot}" if config.debug =~ %r{true}i
                       guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
 
-                      cmd = "/bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} #{esxi_guest_dir}/disk_#{index}.vmdk"
+                      cmd = "/bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} \"#{esxi_guest_dir}/disk_#{index}.vmdk\""
                       puts "cmd: #{cmd}" if config.debug =~ %r{true}i
                       r = ssh.exec!(cmd)
                       if r.exitstatus != 0

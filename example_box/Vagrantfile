@@ -216,6 +216,13 @@ Vagrant.configure('2') do |config|
     #    to convert the errors to warning. (then the import could succeed)
     #esxi.local_lax = 'true'
 
+    #  OPTIONAL.  Guest IP Caching
+    #    If unspecified, guest IP caching will be enabled.  This will result in
+    #    faster vagrant command executution.   However, vagrant could get incorrect
+    #    information if an IP changes on the guest.   Set this 'False' to disable
+    #    IP caching.
+    #esxi.local_use_ip_cache = 'False'
+
     #  DANGEROUS!  Allow Overwrite
     #    If unspecified, the default is to produce an error if overwriting
     #    vm's and packages.

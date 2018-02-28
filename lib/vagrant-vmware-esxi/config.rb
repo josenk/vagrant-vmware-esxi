@@ -28,12 +28,15 @@ module VagrantPlugins
       attr_accessor :local_private_keys
       attr_accessor :local_allow_overwrite
       attr_accessor :local_lax
+      attr_accessor :local_use_ip_cache
       attr_accessor :local_private_keys_path
       attr_accessor :debug
       attr_accessor :supported_guest_virtualhw_versions
       attr_accessor :supported_guest_disk_types
       attr_accessor :supported_guest_nic_types
       attr_accessor :supported_guest_guestos
+      attr_accessor :saved_ipaddress
+      attr_accessor :saved_ipaddress_count
 
       #
       #  legacy (1.x) config entries
@@ -80,7 +83,10 @@ module VagrantPlugins
         @local_private_keys = nil
         @local_allow_overwrite = 'False'
         @local_lax = 'False'
+        @local_use_ip_cache = 'True'
         @debug = 'False'
+        @saved_ipaddress = nil
+        @saved_ipaddress_count = 0
         @system_private_keys_path = [
           '~/.ssh/id_rsa',
           '~/.ssh/id_ecdsa',
@@ -369,7 +375,12 @@ module VagrantPlugins
           @local_lax = 'True'
         else
           @local_lax = 'False'
+        end
 
+        if @local_use_ip_cache =~ /false/i
+          @local_use_ip_cache = 'False'
+        else
+          @local_use_ip_cache = 'True'
         end
 
         if @guest_snapshot_includememory =~ /true/i
@@ -382,6 +393,7 @@ module VagrantPlugins
        else
          @guest_snapshot_quiesced = ''
        end
+
       end
     end
   end

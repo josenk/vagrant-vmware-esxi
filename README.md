@@ -27,9 +27,10 @@ Features and Compatibility
 * package your vm's into boxes.
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
 * Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
-* Disks provisioned using thin, thick or eagerzeroedthick.
+* Disks can be provisioned using thin, thick or eagerzeroedthick.
 * Create additional guest storage (upto 14 virtual disks).
-* Specify GuestOS types, virtual HW version, or any custom vmx settings.
+* Specify GuestOS types, virtual HW version.
+* Any custom vmx settings can be added or modified.
 
 Requirements
 ------------
@@ -173,7 +174,7 @@ Vagrant.configure('2') do |config|
     #esxi.guest_disk_type = 'thick'
 
     #  OPTIONAL.  Create additional storage for guests.
-    #    You can specify an array of upto 14 virtual disk sizes (in GB) that you 
+    #    You can specify an array of upto 14 virtual disk sizes (in GB) that you
     #    would like the provider to create once the guest has been created.
     #esxi.guest_storage = [10,20]
 
@@ -195,13 +196,16 @@ Vagrant.configure('2') do |config|
     #  OPTIONAL. local_lax
     #esxi.local_lax = 'true'
 
+    #  OPTIONAL. Guest IP Caching
+    #esxi.local_use_ip_cache = 'True'
+
     #  DANGEROUS!  Allow Overwrite
     #    If unspecified, the default is to produce an error if overwriting
     #    vm's and packages.
     #esxi.local_allow_overwrite = 'True'
 
     #  Plugin debug output.
-    #    Send bug reports with debug output...
+    #    Please send any bug reports with debug this output...
     #esxi.debug = 'true'
 
   end
@@ -250,14 +254,19 @@ Basic usage
 Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
-* Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review your ESXi logs to help debug why it failed.
-* Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or delete the vm using the VSphere client.
+* Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
+* Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
-* In general I find NFS synced folders a little 'flaky'...
+* In general I find the vagrant NFS synced folders a little 'flaky'...
 
 
 Version History
 ---------------
+* 2.0.5 Performance enhancement. Guest IP caching
+        Performance enhancement. Optimize esxi connectivity checks.
+        Performance enhancement & bugfix.  Get local IP address for NFS syncd folders.
+        Fix, unable to get VMID if getallvms command produces any errors (for other vms).
+
 * 2.0.2 Add support to add additional storage to guest vms.
         Fix, encode (space) in esxi passwords.
 

@@ -93,75 +93,76 @@ module VagrantPlugins
               # Use plain text password from config
               $esxi_password = config.esxi_password
             end
-          end
 
-          #
-          #  Encode special characters in PW
-          #
-          $encoded_esxi_password = $esxi_password.gsub('%', '%25').gsub(\
-            '<', '%3c').gsub('>', '%3e').gsub(\
-            '[', '%5b').gsub(']', '%5d').gsub(\
-            '(', '%28').gsub(')', '%29').gsub(\
-            '@', '%40').gsub('#', '%23').gsub(\
-            '&', '%26').gsub(':', '%3a').gsub(\
-            '/', '%2f').gsub('\\','%5c').gsub(\
-            '"', '%22').gsub('\'','%27').gsub(\
-            '*', '%2a').gsub('?', '%3f').gsub(\
-            '$', '%24').gsub(' ', '%20')
+            #
+            #  Encode special characters in PW
+            #
+            $encoded_esxi_password = $esxi_password.gsub('%', '%25').gsub(\
+              '<', '%3c').gsub('>', '%3e').gsub(\
+              '[', '%5b').gsub(']', '%5d').gsub(\
+              '(', '%28').gsub(')', '%29').gsub(\
+              '@', '%40').gsub('#', '%23').gsub(\
+              '&', '%26').gsub(':', '%3a').gsub(\
+              '/', '%2f').gsub('\\','%5c').gsub(\
+              '"', '%22').gsub('\'','%27').gsub(\
+              '*', '%2a').gsub('?', '%3f').gsub(\
+              '$', '%24').gsub(' ', '%20')
 
-          @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
-                       "#{config.local_private_keys}")
+            @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
+                         "#{config.local_private_keys}")
 
-          #
-          #  Test ESXi host connectivity
-          #
-          begin
-            Net::SSH.start(config.esxi_hostname, config.esxi_username,
-              password:                   $esxi_password,
-              port:                       config.esxi_hostport,
-              keys:                       config.local_private_keys,
-              timeout:                    20,
-              number_of_password_prompts: 0,
-              non_interactive:            true
-            ) do |ssh|
+            #
+            #  Test ESXi host connectivity
+            #
+            begin
+              puts "Testing esxi connectivity" if config.debug =~ %r{ip}i
+              Net::SSH.start(config.esxi_hostname, config.esxi_username,
+                password:                   $esxi_password,
+                port:                       config.esxi_hostport,
+                keys:                       config.local_private_keys,
+                timeout:                    20,
+                number_of_password_prompts: 0,
+                non_interactive:            true
+              ) do |ssh|
 
-              esxi_version = ssh.exec!('vmware -v')
-              ssh.close
+                esxi_version = ssh.exec!('vmware -v')
+                ssh.close
 
-              @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::set_esxi_password')
-              if (config.debug =~ %r{true}i) && $showVersionFlag.nil?
-                $showVersionFlag = true
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: "ESXi version    : #{esxi_version}")
+                @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::set_esxi_password')
+                if (config.debug =~ %r{true}i) && $showVersionFlag.nil?
+                  $showVersionFlag = true
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: "ESXi version    : #{esxi_version}")
+                end
+                if esxi_version !~ %r{^vmware esxi}i
+                  @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
+                               "ESXi version: #{esxi_version}")
+                  raise Errors::ESXiError,
+                        message: 'Unable to connect to ESXi host!'
+                end
               end
-              if esxi_version !~ %r{^vmware esxi}i
-                @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
-                             "ESXi version: #{esxi_version}")
-                raise Errors::ESXiError,
-                      message: 'Unable to connect to ESXi host!'
+            rescue
+              if config.esxi_password =~ %r{^prompt:}i
+                access_error_message = 'Prompt for password'
+              elsif config.esxi_password =~ %r{^env:}i
+                access_error_message = "env:#{esxi_password_env}"
+              elsif config.esxi_password =~ %r{^file:}i
+                access_error_message = "file:#{esxi_password_file}"
+              elsif config.esxi_password =~ %r{^key:}i
+                access_error_message = "key:#{config.local_private_keys}"
+              else
+                access_error_message = 'password in Vagrantfile'
               end
+
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: "ESXi host access : #{access_error_message}")
+
+              @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
+                          "ESXi host access : #{access_error_message}")
+
+              raise Errors::ESXiError,
+                    message: 'Unable to connect to ESXi host!'
             end
-          rescue
-            if config.esxi_password =~ %r{^prompt:}i
-              access_error_message = 'Prompt for password'
-            elsif config.esxi_password =~ %r{^env:}i
-              access_error_message = "env:#{esxi_password_env}"
-            elsif config.esxi_password =~ %r{^file:}i
-              access_error_message = "file:#{esxi_password_file}"
-            elsif config.esxi_password =~ %r{^key:}i
-              access_error_message = "key:#{config.local_private_keys}"
-            else
-              access_error_message = 'password in Vagrantfile'
-            end
-
-            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "ESXi host access : #{access_error_message}")
-
-            @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
-                        "ESXi host access : #{access_error_message}")
-
-            raise Errors::ESXiError,
-                  message: 'Unable to connect to ESXi host!'
           end
         end
       end

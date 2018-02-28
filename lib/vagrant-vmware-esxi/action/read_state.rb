@@ -17,13 +17,48 @@ module VagrantPlugins
           env[:machine_state] = read_state(env)
 
           #  Do NFS stuff
-          if env[:machine_state].to_s.include? "running"
+          if (env[:machine_state].to_s.include? "running") && ($nfs_host_ip.nil?)
             ssh_info = env[:machine].ssh_info
             if defined?(ssh_info[:host])
               env[:nfs_machine_ip] = [ssh_info[:host]]
-              env[:nfs_host_ip] = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+              $nfs_machine_ip = [ssh_info[:host]].dup
               env[:nfs_valid_ids] = [env[:machine].id]
+              $nfs_valid_ids = [env[:machine].id].dup
+
+              begin
+                puts "Get local IP address for NFS. (pri)" if env[:machine].provider_config.debug =~ %r{ip}i
+                #  The Standard way to get your IP.  Get your hostname, resolv it.
+                env[:nfs_host_ip] = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+              rescue
+                puts "Get local IP address for NFS. (alt)" if env[:machine].provider_config.debug =~ %r{ip}i
+                #  Alt method.  Get list of ip_addresses on system and use the first.
+                Socket.ip_address_list.each do |ip|
+                  if (ip.ip_address =~ /^(\d{1,3}).(\d{1,3}).(\d{1,3}).(\d{1,3})$/) && (ip.ip_address !~ /^127.0.0/)
+                    env[:nfs_host_ip] = ip.ip_address
+                    break
+                  end
+                end
+              end
+
+              $nfs_host_ip = env[:nfs_host_ip].dup
+              if env[:nfs_host_ip].nil?
+                #  Something bad happened above.  Give up on NFS.
+                env[:nfs_machine_ip] = nil
+                env[:nfs_host_ip] = nil
+                env[:nfs_valid_ids] = nil
+                #  Give an error, but continue..
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: 'Configure NFS   : ERROR, Unable to configure NFS on this machine.')
+              end
+              if (env[:machine].provider_config.debug =~ %r{ip}i) && !env[:nfs_host_ip].nil?
+                puts "nfs_host_ip: #{env[:nfs_host_ip]}"
+              end
             end
+          else
+            # Use Cached entries
+            env[:nfs_machine_ip] = $nfs_machine_ip
+            env[:nfs_host_ip] = $nfs_host_ip
+            env[:nfs_valid_ids] = $nfs_valid_ids
           end
 
           @app.call(env)
@@ -50,9 +85,7 @@ module VagrantPlugins
             non_interactive:            true
           ) do |ssh|
 
-            r = ssh.exec!(
-                    "vim-cmd vmsvc/getallvms|grep -q \"^#{machine.id} \" && "\
-                    "vim-cmd vmsvc/power.getstate #{machine.id} || return 254")
+            r = ssh.exec!("vim-cmd vmsvc/power.getstate #{machine.id} || return 254")
             power_status = r
 
             return :not_created if r.exitstatus == 254

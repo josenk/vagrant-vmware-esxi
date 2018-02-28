@@ -3,7 +3,7 @@ require File.expand_path('../lib/vagrant-vmware-esxi/version', __FILE__)
 Gem::Specification.new do |s|
   s.name            = 'vagrant-vmware-esxi'
   s.version         = VagrantPlugins::ESXi::VERSION
-  s.date            = '2018-02-15'
+  s.date            = '2018-02-28'
   s.summary         = 'Vagrant ESXi provider plugin'
   s.description     = 'A Vagrant plugin that adds a VMware ESXi provider support'
   s.authors         = ['Jonathan Senkerik']
@@ -20,9 +20,13 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
   s.add_runtime_dependency "nokogiri", '> 1.5'
-  s.add_runtime_dependency "net-ssh", '> 3.0'
+  #s.add_runtime_dependency "net-ssh", '> 4.0'
+  s.add_runtime_dependency 'rbnacl', '>= 3.2', '< 4.0'
+  s.add_runtime_dependency 'rbnacl-libsodium'
+  s.add_runtime_dependency 'bcrypt_pbkdf', '>= 1.0'
 
-  s.add_development_dependency "bundler"
-  s.add_development_dependency "rspec-core"
+  #s.add_development_dependency "bundler"
+  #s.add_development_dependency "rspec-core"
 
 end
+

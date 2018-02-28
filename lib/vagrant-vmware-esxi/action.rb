@@ -9,7 +9,6 @@ module VagrantPlugins
       def self.action_read_state
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use ReadSSHInfo
           b.use ReadState
         end
       end
