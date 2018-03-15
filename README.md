@@ -258,10 +258,16 @@ Known issues with vmware_esxi
 * Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 * In general I find the vagrant NFS synced folders a little 'flaky'...
+* V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  Update to a newer version.
 
 
 Version History
 ---------------
+* 2.0.6 Fix Windows compatibility by not supporting ed25519 ssh keys.  When net-ssh 5.x is released AND vagrant allows it's use, I will support ed25519 again.
+        Fix, encode '/' in esxi passwords.
+        Fix, Get local IP address for NFS syncd folders.  Filter out localhost 127.0.0.0/8.
+        Work-around 'prompt:' issues with unsupported consoles. Cygwin & gitbash, for example.
+
 * 2.0.5 Performance enhancement. Guest IP caching
         Performance enhancement. Optimize esxi connectivity checks.
         Performance enhancement & bugfix.  Get local IP address for NFS syncd folders.

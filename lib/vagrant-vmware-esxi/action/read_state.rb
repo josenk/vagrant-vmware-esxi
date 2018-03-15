@@ -33,7 +33,7 @@ module VagrantPlugins
                 puts "Get local IP address for NFS. (alt)" if env[:machine].provider_config.debug =~ %r{ip}i
                 #  Alt method.  Get list of ip_addresses on system and use the first.
                 Socket.ip_address_list.each do |ip|
-                  if (ip.ip_address =~ /^(\d{1,3}).(\d{1,3}).(\d{1,3}).(\d{1,3})$/) && (ip.ip_address !~ /^127.0.0/)
+                  if (ip.ip_address =~ /^(\d{1,3}).(\d{1,3}).(\d{1,3}).(\d{1,3})$/) && (ip.ip_address !~ /^127./)
                     env[:nfs_host_ip] = ip.ip_address
                     break
                   end

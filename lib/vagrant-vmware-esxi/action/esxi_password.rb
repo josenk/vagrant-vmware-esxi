@@ -33,12 +33,25 @@ module VagrantPlugins
               #  Prompt for password
               #
               begin
-                print "#{config.esxi_hostname} password:"
+                print "#{config.esxi_username}@#{config.esxi_hostname} password:"
                 $esxi_password = STDIN.noecho(&:gets).chomp
                 puts ''
               rescue
-                raise Errors::ESXiError,
-                      message: 'Prompt for password error???'
+                begin
+                  #  There is something funky with STDIN... (unsupported console)
+                  puts ''
+                  puts ''
+                  puts 'Error! Your console doesn\'t support hiding input. We\'ll ask for'
+                  puts 'input again below, but we WILL NOT be able to hide input. If this'
+                  puts 'is a problem for you, ctrl-C / [ENTER] to exit and fix your stdin.'
+                  puts ''
+                  print "#{config.esxi_username}@#{config.esxi_hostname} password:"
+                  $esxi_password = $stdin.readline().chomp
+                  puts ''
+                rescue
+                  raise Errors::ESXiError,
+                        message: 'Prompt for password error???'
+                end
               end
             elsif config.esxi_password =~ %r{^env:}i
               #
@@ -84,9 +97,7 @@ module VagrantPlugins
               #
               $esxi_password = ''
               esxi_password_key = config.esxi_password.gsub(/key:/i, '').chomp
-              if esxi_password_key.empty?
-                config.local_private_keys = config.system_private_keys_path
-              else
+              unless esxi_password_key.empty?
                 config.local_private_keys = esxi_password_key
               end
             else
@@ -106,7 +117,8 @@ module VagrantPlugins
               '/', '%2f').gsub('\\','%5c').gsub(\
               '"', '%22').gsub('\'','%27').gsub(\
               '*', '%2a').gsub('?', '%3f').gsub(\
-              '$', '%24').gsub(' ', '%20')
+              '$', '%24').gsub(' ', '%20').gsub(\
+              '/', '%2f')
 
             @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
                          "#{config.local_private_keys}")
@@ -115,7 +127,9 @@ module VagrantPlugins
             #  Test ESXi host connectivity
             #
             begin
+              puts "RUBY_PLATFORM: #{RUBY_PLATFORM}" if config.debug =~ %r{true}i
               puts "Testing esxi connectivity" if config.debug =~ %r{ip}i
+              puts "esxi_ssh_keys: #{config.local_private_keys}" if config.debug =~ %r{ip}i
               Net::SSH.start(config.esxi_hostname, config.esxi_username,
                 password:                   $esxi_password,
                 port:                       config.esxi_hostport,

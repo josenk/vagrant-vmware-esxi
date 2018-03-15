@@ -87,12 +87,14 @@ module VagrantPlugins
         @debug = 'False'
         @saved_ipaddress = nil
         @saved_ipaddress_count = 0
-        @system_private_keys_path = [
+        @system_private_keys = [
           '~/.ssh/id_rsa',
           '~/.ssh/id_ecdsa',
-          '~/.ssh/id_ed25519',
           '~/.ssh/id_dsa'
         ]
+        #'~/.ssh/id_ed25519',
+        # Removed support for ed25519 because libsodium is not compatible with windows.
+        # Should be added back when net-ssh 5.0 is out of beta.
         @supported_guest_virtualhw_versions = [
           4,7,8,9,10,11,12,13
         ]
@@ -367,7 +369,7 @@ module VagrantPlugins
 
         @esxi_virtual_network = ['--NotSet--'] if @esxi_virtual_network.nil?
 
-        @local_private_keys = @system_private_keys_path if @local_private_keys == nil
+        @local_private_keys = @system_private_keys if @local_private_keys == nil
 
         # @guest_virtualhw_version = @guest_virtualhw_version.to_i unless @guest_virtualhw_version.nil?
 

@@ -473,6 +473,7 @@ module VagrantPlugins
                            "  Please download and "\
                            '  install from http://www.vmware.com.'
           end
+
           ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
                 "#{netOpts} -dm=#{guest_disk_type} #{local_laxoption} "\
                 "-ds=\"#{@guestvm_dsname}\" --name=\"#{desired_guest_name}\" "\
@@ -487,7 +488,11 @@ module VagrantPlugins
             @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
             puts "ovftool command: #{ovf_cmd}"
           elsif config.debug =~ %r{true}i
-            ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
+            if $encoded_esxi_password == ''
+              ovf_cmd_nopw = ovf_cmd
+            else
+              ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
+            end
             puts "ovftool command: #{ovf_cmd_nopw}"
           end
           unless system "#{ovf_cmd}"
