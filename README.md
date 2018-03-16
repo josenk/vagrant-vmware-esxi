@@ -35,7 +35,7 @@ Features and Compatibility
 Requirements
 ------------
 1. This is a vagrant plugin, so you need vagrant installed...  :-)
-2. This plugin requires ovftool from VMware.  Download from VMware website.
+2. This plugin requires ovftool from VMware.  Download from VMware website.  NOTE: ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 >https://www.vmware.com/support/developer/ovf/
 3. You MUST enable ssh access on your ESXi hypervisor.
   * Google 'How to enable ssh access on esxi'
@@ -59,7 +59,7 @@ How to use and configure a Vagrantfile
 
 1. cd SOMEDIR
 1. `vagrant init`
-1. `vi Vagrantfile`  # See below to setup access your ESXi host and to set some preferences.
+1. `vi Vagrantfile`  # Replace the contents of Vagrantfile with the following example. Specify parameters to access your ESXi host, guest and local preferences.
 ```ruby
 #
 #  Fully documented Vagrantfile available
@@ -212,27 +212,6 @@ Vagrant.configure('2') do |config|
 end
 ```
 
-Upgrading from vagrant-vmware-esxi 1.x.x
-----------------------------------------
-The following Vagrantfile parameters have been renamed for clarity.  The plugin still recognizes these legacy parameters, however it's recommended to migrate to the 2.x parameters.
-* esxi_private_keys --> esxi_password = "key:"
-* vm_disk_store --> esxi_disk_store
-* virtual_network --> esxi_virtual_network
-* resource_pool --> esxi_resource_pool
-* vmname --> guest_name
-* vmname_prefix --> guest_name_prefix
-* ssh_username --> guest_username
-* memsize --> guest_memsize
-* numvcpus --> guest_numvcpus
-* vm_disk_type --> guest_disk_type
-* nic_type --> guest_nic_type
-* mac_address --> guest_mac_address
-* guestos --> guest_guestos
-* virtualhw_version --> guest_virtualhw_version
-* custom_vmx_settings --> guest_custom_vmx_settings
-* lax --> local_lax
-* allow_overwrite --> local_allow_overwrite
-
 
 Basic usage
 -----------
@@ -251,14 +230,22 @@ Basic usage
   * `vagrant provision`
 
 
+
+Upgrading from vagrant-vmware-esxi 1.x.x
+----------------------------------------
+See wiki for more information.
+>https://github.com/josenk/vagrant-vmware-esxi/wiki/Upgrading-from-vagrant-vmware-esxi-1.x.x
+
+
 Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 * Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
 * Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
-* In general I find the vagrant NFS synced folders a little 'flaky'...
-* V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  Update to a newer version.
+* Vagrant NFS synced folders is not reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, etc...
+* V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
+* Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
 
 
 Version History
