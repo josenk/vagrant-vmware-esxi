@@ -23,8 +23,18 @@ module VagrantPlugins
       def self.action_halt
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use ReadState
-          b.use Halt
+          b.use Call, ReadState do |env1, b1|
+            if env1[:machine_state].to_s == 'running'
+              b1.use Shutdown
+              b1.use Call, WaitForState, :powered_off, 30 do |env1, b2|
+                unless env1[:result] == 'True'
+                  b2.use Halt
+                end
+              end
+            else
+              b1.use Halt
+            end
+          end
         end
       end
 
@@ -41,6 +51,7 @@ module VagrantPlugins
           b.use SetESXiPassword
           b.use ReadState
           b.use Resume
+          b.use WaitForState, :running, 240
         end
       end
 
@@ -78,17 +89,13 @@ module VagrantPlugins
       def self.action_snapshot_restore
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use action_halt
+          b.use Halt
           b.use Call, WaitForState, :powered_off, 240 do |env1, b1|
             if env1[:result] == 'True'
               b1.use SnapshotRestore
               b1.use ReadState
               b1.use Boot
-              b1.use Call, WaitForState, :running, 240 do |env1, b2|
-                if env1[:result] == 'True'
-                  #
-                end
-              end
+              b1.use WaitForState, :running, 240
             end
           end
         end
@@ -107,7 +114,7 @@ module VagrantPlugins
           b.use SetESXiPassword
           b.use Call, ReadState do |env1, b1|
             unless env1[:machine_state] == 'powered_off'
-              b1.use action_halt
+              b1.use Halt
             end
             b1.use ReadState
             b1.use Destroy
@@ -178,6 +185,7 @@ module VagrantPlugins
       autoload :SetNetworkIP, action_root.join('set_network_ip')
       autoload :Boot, action_root.join('boot')
       autoload :Halt, action_root.join('halt')
+      autoload :Shutdown, action_root.join('shutdown')
       autoload :Destroy, action_root.join('destroy')
       autoload :Suspend, action_root.join('suspend')
       autoload :Resume, action_root.join('resume')

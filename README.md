@@ -52,6 +52,7 @@ How to install
 Download and install Vagrant on your local system using instructions from https://vagrantup.com/downloads.html.   
 ```
 vagrant plugin install vagrant-vmware-esxi
+vagrant plugin list
 vagrant version
 ```
 How to use and configure a Vagrantfile
@@ -72,7 +73,7 @@ Vagrant.configure('2') do |config|
   #    https://www.vmware.com/support/developer/ovf/
   #
   #    If your box is stuck at 'Powered On', then most likely
-  #    the system doesn't have the vmware tools installed.
+  #    the box/vm doesn't have the vmware tools installed.
   #
   # Here are some of the MANY examples....
   config.vm.box = 'generic/centos7'
@@ -93,12 +94,16 @@ Vagrant.configure('2') do |config|
   config.vm.synced_folder('.', '/vagrant', type: 'rsync')
   config.vm.synced_folder('.', '/vagrant', type: 'nfs', disabled: true)
 
-  #  Vagrant can set a static IP for the additional network interfaces.  Use
-  #  public_network or private_network to manually set a static IP and
-  #  netmask.  ESXi doesn't use the concept of public or private networks so
-  #  both are valid here.  The primary network interface is considered the
-  #  "vagrant management" interface and cannot be changed,
-  #  so you can specify 3 entries here!
+  #  Vagrant can configure additional network interfaces using a static IP or
+  #  DHCP. Use public_network or private_network to manually set a static IP and
+  #  optionally netmask.  ESXi doesn't use the concept of public or private
+  #  networks so both are valid here.  The primary network interface is considered the
+  #  "vagrant management" interface and cannot be changed and this plugin
+  #  supports 4 NICS, so you can specify 3 entries here!
+  #
+  #  https://www.vagrantup.com/docs/networking/public_network.html
+  #  https://www.vagrantup.com/docs/networking/private_network.html
+  #
   #    *** Invalid settings could cause 'vagrant up' to fail ***
   #config.vm.network 'private_network', ip: '192.168.10.170', netmask: '255.255.255.0'
   #config.vm.network 'private_network', ip: '192.168.11.170'
@@ -127,11 +132,11 @@ Vagrant.configure('2') do |config|
     #  SSH port.
     #esxi.esxi_hostport = 22
 
-    #  HIGHLY RECOMMENDED!  Virtual Network
-    #    You should specify a Virtual Network!  If it's not specified, the
+    #  HIGHLY RECOMMENDED!  ESXi Virtual Network
+    #    You should specify an ESXi Virtual Network!  If it's not specified, the
     #    default is to use the first found.  You can specify up to 4 virtual
     #    networks using an array format.
-    #esxi.esxi_virtual_network = ['vmnet1','vmnet2','vmnet3','vmnet4']
+    #esxi.esxi_virtual_network = ['VM Network','VM Network2','VM Network3','VM Network4']
 
     #  OPTIONAL.  Specify a Disk Store
     #esxi.esxi_disk_store = 'DS_001'
@@ -174,7 +179,7 @@ Vagrant.configure('2') do |config|
     #esxi.guest_disk_type = 'thick'
 
     #  OPTIONAL.  Create additional storage for guests.
-    #    You can specify an array of upto 14 virtual disk sizes (in GB) that you
+    #    You can specify an array of up to 13 virtual disk sizes (in GB) that you
     #    would like the provider to create once the guest has been created.
     #esxi.guest_storage = [10,20]
 
@@ -222,6 +227,7 @@ Basic usage
   * `vagrant status`
   * `vagrant suspend`
   * `vagrant resume`
+  * `vagrant ssh-config`
   * `vagrant snapshot push`
   * `vagrant snapshot list`
   * `vagrant snapshot-info`
@@ -250,6 +256,8 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.0.7 Fix, Doesn't wait for running when executing "vagrant reload"
+        Fix, "vagrant halt" will now attempt a graceful shutdown before doing a hard power off.
 * 2.0.6 Fix Windows compatibility by not supporting ed25519 ssh keys.  When net-ssh 5.x is released AND vagrant allows it's use, I will support ed25519 again.
         Fix, encode '/' in esxi passwords.
         Fix, Get local IP address for NFS syncd folders.  Filter out localhost 127.0.0.0/8.

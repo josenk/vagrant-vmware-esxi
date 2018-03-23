@@ -51,6 +51,7 @@ module VagrantPlugins
                   "grep -A1 '.*Snapshot Name        : #{env[:snapshot_name]}$' | "\
                   "grep 'Snapshot Id'|awk '{print $NF}'` suppressPowerOn")
 
+              config.saved_ipaddress = nil
               if r.exitstatus != 0
                 raise Errors::ESXiError,
                       message: "Unable to restore snapshots of the VM:\n"\

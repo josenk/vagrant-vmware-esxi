@@ -4,20 +4,20 @@ require 'net/ssh'
 module VagrantPlugins
   module ESXi
     module Action
-      # This action will halt (power off) the VM
-      class Halt
+      # This action will start a graceful shutdown on the vm
+      class Shutdown
         def initialize(app, _env)
           @app    = app
-          @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::halt')
+          @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::shutdown')
         end
 
         def call(env)
-          halt(env)
+          shutdown(env)
           @app.call(env)
         end
 
-        def halt(env)
-          @logger.info('vagrant-vmware-esxi, halt: start...')
+        def shutdown(env)
+          @logger.info('vagrant-vmware-esxi, shutdown: start...')
 
           # Get config.
           machine = env[:machine]
@@ -28,6 +28,8 @@ module VagrantPlugins
           elsif env[:machine_state].to_s == 'not_created'
             env[:ui].info I18n.t('vagrant_vmware_esxi.already_destroyed')
           else
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Starting graceful shutdown...")
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
               password:                   $esxi_password,
               port:                       config.esxi_hostport,
@@ -37,14 +39,13 @@ module VagrantPlugins
               non_interactive:            true
             ) do |ssh|
 
-              r = ssh.exec!("vim-cmd vmsvc/power.off #{machine.id}")
+              r = ssh.exec!("vim-cmd vmsvc/power.shutdown #{machine.id}")
               config.saved_ipaddress = nil
 
               if r.exitstatus != 0
                 raise Errors::ESXiError,
-                      message: "Unable to power off the VM:\n    #{r}"
+                      message: "Unable to shutdown the VM:\n    #{r}"
               end
-              env[:ui].info I18n.t('vagrant_vmware_esxi.states.powered_off.short')
             end
           end
         end

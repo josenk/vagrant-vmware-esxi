@@ -50,6 +50,7 @@ module VagrantPlugins
             ) do |ssh|
 
               r = ssh.exec!("vim-cmd vmsvc/power.on #{machine.id}")
+              config.saved_ipaddress = nil
 
               if r.exitstatus != 0
                 raise Errors::ESXiError,
