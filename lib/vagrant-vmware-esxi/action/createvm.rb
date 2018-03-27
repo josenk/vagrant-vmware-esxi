@@ -79,8 +79,8 @@ module VagrantPlugins
             #
             #  Figure out DataStore
             r = ssh.exec!(
-                    'df 2>/dev/null| grep "^[VMFS|NFS].*/vmfs/volumes/" | '\
-                    'sort -nk4 | sed "s|.*/vmfs/volumes/||g"')
+                    'esxcli storage filesystem list | grep /vmfs/volumes/ | '\
+                    'cut -d " " -f3')
 
             availvolumes = r.split(/\n/)
             if config.debug =~ %r{true}i
