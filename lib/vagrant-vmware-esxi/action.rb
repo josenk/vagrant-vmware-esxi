@@ -27,9 +27,7 @@ module VagrantPlugins
             if env1[:machine_state].to_s == 'running'
               b1.use Shutdown
               b1.use Call, WaitForState, :powered_off, 30 do |env1, b2|
-                unless env1[:result] == 'True'
-                  b2.use Halt
-                end
+                b2.use Halt unless env1[:result] == 'True'
               end
             else
               b1.use Halt
@@ -113,9 +111,7 @@ module VagrantPlugins
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
           b.use Call, ReadState do |env1, b1|
-            unless env1[:machine_state] == 'powered_off'
-              b1.use Halt
-            end
+            b1.use Halt unless env1[:machine_state] == 'powered_off'
             b1.use ReadState
             b1.use Destroy
           end
@@ -164,6 +160,7 @@ module VagrantPlugins
               b1.use Provision
               b1.use SyncedFolderCleanup
               b1.use SyncedFolders
+              #b1.use SetHostname   # Still too buggy.  Tested with vagrant 2.0.4dev
             end
           end
         end

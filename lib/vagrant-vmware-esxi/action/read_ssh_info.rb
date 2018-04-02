@@ -39,7 +39,6 @@ module VagrantPlugins
                        " #{env[:machine_state]}")
 
           if config.saved_ipaddress.nil? or config.local_use_ip_cache == 'False'
-            puts "Determine guest IP address." if config.debug =~ %r{ip}i
 
             #  Figure out vm_ipaddress
             Net::SSH.start(config.esxi_hostname, config.esxi_username,

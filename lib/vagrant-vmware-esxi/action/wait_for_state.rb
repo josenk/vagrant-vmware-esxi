@@ -36,6 +36,7 @@ module VagrantPlugins
               env[:result] = 'False' # couldn't reach state in time
             end
           end
+          env[:machine].provider_config.saved_ipaddress = nil
           @app.call(env)
         end
       end

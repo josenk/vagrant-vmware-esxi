@@ -9,9 +9,14 @@ Refer to the WIKI for documentation, examples and other information...
 >https://github.com/josenk/vagrant-vmware-esxi/wiki
 
 
+What's new!
+-----------
+Added support to clone from a VM!   Refer to the WIKI for documentation, example and other information.
+>https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
 
 Features and Compatibility
 --------------------------
+* Clone from VMs.  Clone a VM on the esxi host instead of transferring a box stored on your local pc.
 * Any of the vmware Box formats should be compatible.
   * vmware_desktop, vmware_fusion, vmware_workstation...
   * To be fully functional, you must have open-vm-tools or vmware tools installed.
@@ -78,7 +83,7 @@ Vagrant.configure('2') do |config|
   # Here are some of the MANY examples....
   config.vm.box = 'generic/centos7'
   #config.vm.box = 'generic/centos6'
-  #config.vm.box = 'generic/fedora26'
+  #config.vm.box = 'generic/fedora27'
   #config.vm.box = 'generic/freebsd11'
   #config.vm.box = 'generic/ubuntu1710'
   #config.vm.box = 'generic/debian9'
@@ -144,6 +149,13 @@ Vagrant.configure('2') do |config|
     #  OPTIONAL.  Resource Pool
     #     Vagrant will NOT create a Resource pool it for you.
     #esxi.esxi_resource_pool = '/Vagrant'
+
+    #  Optional. Specify a VM to clone instead of uploading a box.
+    #    Vagrant can use any stopped VM as the source 'box'.   The VM must be
+    #    registered, stopped and must have the vagrant insecure ssh key installed.
+    #    If the VM is stored in a resource pool, it must be specified.
+    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
+    #esxi.clone_from_vm = 'resource_pool/source_vm'
 
     #  OPTIONAL.  Guest VM name to use.
     #    The Default will be automatically generated.
@@ -256,8 +268,12 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.1.0 Add support for clone_from_vm.
+        Fix, use esxcli to get storage information.
+
 * 2.0.7 Fix, Doesn't wait for running when executing "vagrant reload"
         Fix, "vagrant halt" will now attempt a graceful shutdown before doing a hard power off.
+
 * 2.0.6 Fix Windows compatibility by not supporting ed25519 ssh keys.  When net-ssh 5.x is released AND vagrant allows it's use, I will support ed25519 again.
         Fix, encode '/' in esxi passwords.
         Fix, Get local IP address for NFS syncd folders.  Filter out localhost 127.0.0.0/8.

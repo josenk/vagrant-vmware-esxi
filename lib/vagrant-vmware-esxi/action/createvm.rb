@@ -31,6 +31,16 @@ module VagrantPlugins
             return
           end
 
+          #
+          # Verify ovftool is installed.
+          #
+          unless system 'ovftool --version'
+            raise Errors::OVFToolError,
+                  message: 'ovftool not found or not in your path.'\
+                           "  Please download and "\
+                           '  install from http://www.vmware.com.'
+          end
+
           # Set desired_guest_name
           if !env[:machine].config.vm.hostname.nil?
             # A hostname has been set, so use it.
@@ -52,15 +62,38 @@ module VagrantPlugins
           desired_guest_name = desired_guest_name[0..252].gsub(/_/,'-').gsub(/[^0-9A-Za-z\-\.]/i, '').strip
           @logger.info("vagrant-vmware-esxi, createvm: config.guest_name: #{config.guest_name}")
 
-          #
           #  Source vmx / vmdk files
           src_dir = env[:machine].box.directory
           @logger.info("vagrant-vmware-esxi, createvm: src_dir: #{src_dir}")
 
-          vmx_file = Dir.glob("#{src_dir}/*.vmx").first
-          vmdk_files = Dir.glob("#{src_dir}/*.vmdk")
-          @logger.info("vagrant-vmware-esxi, createvm: vmx_file: #{vmx_file}")
-          @logger.info("vagrant-vmware-esxi, createvm: vmdk_files: #{vmdk_files}")
+          if config.clone_from_vm.nil?
+            vmx_file = Dir.glob("#{src_dir}/*.vmx").first
+            @logger.info("vagrant-vmware-esxi, createvm: vmx_file: #{vmx_file}")
+            source_vmx_contents = File.read(vmx_file)
+          else
+            begin
+              tmpdir = Dir.mktmpdir
+            rescue
+              raise Errors::GeneralError,
+                    message: "Unable to create tmp dir #{tmpdir}"
+            end
+            #
+            #  Source from Clone Source
+            clone_from_vm_path = "vi://#{config.esxi_username}:#{$encoded_esxi_password}@#{config.esxi_hostname}/#{config.clone_from_vm}"
+            ovf_cmd = "ovftool --noSSLVerify --overwrite --powerOffTarget --noDisks --targetType=vmx "\
+                  "#{clone_from_vm_path} #{tmpdir}"
+            unless system "#{ovf_cmd}"
+              raise Errors::OVFToolError,
+                    message: "Unable to access #{config.clone_from_vm}"
+            end
+            vmx_file = Dir.glob("#{tmpdir}/#{config.clone_from_vm.split('/')[-1]}/*.vmx").first
+            unless source_vmx_contents = File.read(vmx_file)
+              raise Errors::GeneralError,
+                    message: "Unable to read #{vmx_file}"
+            end
+
+            puts "source_vmx_contents: #{source_vmx_contents}" if config.debug =~ %r{vmx}i
+          end
 
           #
           #  Open the network connection
@@ -79,8 +112,8 @@ module VagrantPlugins
             #
             #  Figure out DataStore
             r = ssh.exec!(
-                    'df 2>/dev/null| grep "^[VMFS|NFS].*/vmfs/volumes/" | '\
-                    'sort -nk4 | sed "s|.*/vmfs/volumes/||g"')
+                    'esxcli storage filesystem list | grep "/vmfs/volumes/.*[VMFS|NFS]" | '\
+                    "sort -nk7 | awk '{print $2}'")
 
             availvolumes = r.split(/\n/)
             if config.debug =~ %r{true}i
@@ -196,60 +229,93 @@ module VagrantPlugins
           @logger.info('vagrant-vmware-esxi, createvm: '\
                        "esxi_virtual_network: #{@guestvm_network}")
 
-          #   finalize some paramaters
-          #if (config.guest_memsize.is_a? String) || (config.guest_memsize.is_a? Integer)
-          #  desired_guest_memsize = config.guest_memsize.to_s.to_i
-          #end
-          #if (config.guest_numvcpus.is_a? String) || (config.guest_numvcpus.is_a? Integer)
-          #  desired_guest_numvcpus = config.guest_numvcpus.to_s.to_i
-          #end
+          #  Set some defaults
           desired_guest_memsize = config.guest_memsize.to_s.to_i unless config.guest_memsize.nil?
+          desired_guest_memsize = 1024 if desired_guest_memsize.nil?
+
           desired_guest_numvcpus = config.guest_numvcpus.to_s.to_i unless config.guest_numvcpus.nil?
+          desired_guest_numvcpus = 1 if desired_guest_numvcpus.nil?
+
+          unless config.guest_guestos.nil?
+            if config.supported_guest_guestos.include? config.guest_guestos.downcase
+              desired_guestos = config.guest_guestos.downcase.strip
+            else
+              config.guest_guestos = nil
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: 'WARNING         : '\
+                                            "GuestOS: #{config.guest_guestos} not "\
+                                            "supported, using box/ovftool defaults")
+            end
+          end
+
+          unless config.guest_virtualhw_version.nil?
+            if config.supported_guest_virtualhw_versions.include? config.guest_virtualhw_version.to_i
+              desired_virtualhw_version = config.guest_virtualhw_version.to_i.to_s
+            else
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                    message: 'WARNING         : '\
+                                             "Invalid guest_virtualhw_version: #{config.guest_virtualhw_version},"\
+                                             "using ovftool defaults")
+              config.guest_virtualhw_version = nil
+            end
+          end
+
+          unless config.guest_nic_type.nil?
+            if config.supported_guest_nic_types.include? config.guest_nic_type.downcase
+              desired_nic_type = config.guest_nic_type.downcase
+            else
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                   message: 'WARNING         : '\
+                                            "NIC type: #{config.guest_nic_type} not "\
+                                            "found, using ovftool defaults.")
+              config.guest_nic_type = nil
+            end
+          end
 
           #
           #   Fix/clean up vmx file.
           #
           new_vmx_contents = ''
-          File.readlines(vmx_file).each do |line|
+          source_vmx_contents.each_line do |line|
 
             case line
             when /^displayname =/i
               new_vmx_contents << "displayname = \"#{desired_guest_name}\"\n"
-            when /^memsize =/i
-              if desired_guest_memsize.nil?
-                new_vmx_contents << line
-                desired_guest_memsize = line.gsub(/^memsize = /i, '').gsub(/\"/, '').to_i
-              else
-                new_vmx_contents << "memsize = \"#{desired_guest_memsize}\"\n"
-              end
-            when /^numvcpus =/i
-              if desired_guest_numvcpus.nil?
-                new_vmx_contents << line
-                desired_guest_numvcpus = line.gsub(/^numvcpus = /i, '').gsub(/\"/, '').to_i
-              else
-                new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
-              end
-            when /^ethernet[0-9]/i
-              # Do nothing, delete these lines, we'll fix it later.
-            when /^guestOS = /i
 
-              in_vmx_guest_guestos = line.gsub(/^guestOS = /i, '').gsub(/\"/, '').strip
+            when /^memsize =/i
+              if config.guest_memsize.nil?
+                desired_guest_memsize = line.gsub(/^memsize = /i, '').gsub(/\"/, '').to_i
+              end
+              new_vmx_contents << "memsize = \"#{desired_guest_memsize}\"\n"
+
+            when /^numvcpus =/i
+              if config.guest_numvcpus.nil?
+                desired_guest_numvcpus = line.gsub(/^numvcpus = /i, '').gsub(/\"/, '').to_i
+              end
+              new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
+
+            when /^guestOS = /i
               if config.guest_guestos.nil?
-                config.guest_guestos = in_vmx_guest_guestos
+                desired_guestos = line.gsub(/^guestOS = /i, '').gsub(/\"/, '').strip
                 new_vmx_contents << line
               else
-                if config.supported_guest_guestos.include? config.guest_guestos.downcase
-                  config.guest_guestos = config.guest_guestos.downcase.strip
-                  new_vmx_contents << "guestOS = \"#{config.guest_guestos}\"\n"
-                else
-                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                       message: 'WARNING         : '\
-                                                "GuestOS: #{config.guest_guestos} not "\
-                                                "supported, using box/ovftool defaults")
-                  config.guest_guestos = in_vmx_guest_guestos
-                  new_vmx_contents << line
-                end
+                new_vmx_contents << "guestOS = \"#{desired_guestos}\"\n"
               end
+
+            when /^virtualHW.version = /i
+              if desired_virtualhw_version.nil?
+                desired_virtualhw_version = line.gsub(/^virtualHW.version = /i, '').gsub(/\"/, '').strip
+                new_vmx_contents << line
+              else
+                new_vmx_contents << "virtualHW.version = \"#{desired_virtualhw_version}\"\n"
+              end
+
+            when /^ethernet[0-9]/i
+              # Just save the nic type
+              if (line =~ /ethernet0.virtualDev = /i) and desired_nic_type.nil?
+                desired_nic_type = line.gsub(/ethernet0.virtualDev = /i, '').gsub('"', '').strip
+              end
+
             else
               new_vmx_contents << line
             end
@@ -258,29 +324,7 @@ module VagrantPlugins
 
           #  finalize vmx.
           unless new_vmx_contents =~ %r{^numvcpus =}i
-            if desired_guest_numvcpus.nil?
-              new_vmx_contents << "numvcpus = \"1\"\n"
-            else
-              new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
-            end
-          end
-
-          #  Append virt network options
-          netOpts = ""
-          networkID = 0
-          for element in @guestvm_network do
-            if config.debug =~ %r{true}i
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: "Network[#{networkID}]      : #{element}")
-            end
-            new_vmx_contents << "ethernet#{networkID}.networkName = \"net#{networkID}\"\n"
-            new_vmx_contents << "ethernet#{networkID}.present = \"TRUE\"\n"
-            new_vmx_contents << "ethernet#{networkID}.addressType = \"generated\"\n"
-            netOpts << " --net:\"net#{networkID}=#{element}\""
-            networkID += 1
-            if networkID >= 4
-              break
-            end
+            new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
           end
 
           #  Write new vmx file on local filesystem
@@ -334,21 +378,6 @@ module VagrantPlugins
             config.guest_mac_address = new_guest_mac_address
           end
 
-          #  Validate nic types
-          if config.guest_nic_type.nil?
-            guest_nic_type = nil
-          else
-            if config.supported_guest_nic_types.include?(config.guest_nic_type.downcase)
-              guest_nic_type = config.guest_nic_type.downcase
-            else
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: 'WARNING         : '\
-                                            "NIC type: #{config.guest_nic_type} not "\
-                                            "found, using ovftool defaults.")
-              guest_nic_type = nil
-            end
-          end
-
           #  Validate disk types (thin, thick, etc...)
           if config.guest_disk_type.nil?
             guest_disk_type = "thin"
@@ -382,19 +411,6 @@ module VagrantPlugins
             config.guest_storage = new_guest_storage
           end
 
-          #  Validate virtual HW levels
-          unless config.guest_virtualhw_version.nil?
-            if config.supported_guest_virtualhw_versions.include? config.guest_virtualhw_version.to_i
-              guest_virtualhw_version = config.guest_virtualhw_version.to_i.to_s
-            else
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                    message: 'WARNING         : '\
-                                             "Invalid guest_virtualhw_version: #{config.guest_virtualhw_version},"\
-                                             " using ovftool defaults")
-              guest_virtualhw_version = nil
-            end
-          end
-
           # Validate local_lax setting (use relaxed (--lax) ovftool option)
           unless config.local_lax.nil?
             if config.local_lax == 'True'
@@ -403,7 +419,6 @@ module VagrantPlugins
               local_laxoption = ''
             end
           end
-
 
           #
           #  Print summary
@@ -423,10 +438,15 @@ module VagrantPlugins
                                message: " --- Guest Summary ---")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "VM Name         : #{desired_guest_name}")
-          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                               message: "Box             : #{env[:machine].box.name}")
-          env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                               message: "Box Ver         : #{env[:machine].box.version}")
+          if config.clone_from_vm.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Box             : #{env[:machine].box.name}")
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Box Ver         : #{env[:machine].box.version}")
+          else
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Clone from VM   : #{config.clone_from_vm}")
+          end
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Memsize (MB)    : #{desired_guest_memsize}")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -435,9 +455,9 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Mac Address     : #{config.guest_mac_address[0..3]}")
           end
-          unless guest_nic_type.nil?
+          unless config.guest_nic_type.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Nic Type        : #{guest_nic_type}")
+                                 message: "Nic Type        : #{desired_nic_type}")
           end
           unless config.guest_disk_type.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -448,10 +468,10 @@ module VagrantPlugins
                                  message: "Storage (GB)    : #{config.guest_storage[0..13]}")
           end
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                               message: "Guest OS type   : #{config.guest_guestos}")
-          unless guest_virtualhw_version.nil?
+                               message: "Guest OS type   : #{desired_guestos}")
+          unless config.virtualhw_version.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Virtual HW ver  : #{guest_virtualhw_version}")
+                                 message: "Virtual HW ver  : #{desired_virtualhw_version}")
           end
           if config.local_lax == 'True'
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -464,20 +484,15 @@ module VagrantPlugins
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "  --- Guest Build ---")
 
-          #
-          # Using ovftool, import vmx in box folder, export to ESXi server
-          #
-          unless system 'ovftool --version'
-            raise Errors::OVFToolError,
-                  message: 'ovftool not found or not in your path.'\
-                           "  Please download and "\
-                           '  install from http://www.vmware.com.'
+          if config.clone_from_vm.nil?
+            src_path = new_vmx_file
+          else
+            src_path = clone_from_vm_path
           end
-
           ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
-                "#{netOpts} -dm=#{guest_disk_type} #{local_laxoption} "\
+                "-dm=#{guest_disk_type} #{local_laxoption} "\
                 "-ds=\"#{@guestvm_dsname}\" --name=\"#{desired_guest_name}\" "\
-                "\"#{new_vmx_file}\" vi://#{config.esxi_username}:"\
+                "\"#{src_path}\" vi://#{config.esxi_username}:"\
                 "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
                 "#{esxi_resource_pool}"
 
@@ -505,10 +520,11 @@ module VagrantPlugins
                                  message: "Keeping file    : #{new_vmx_file}")
           else
             File.delete(new_vmx_file)
+            FileUtils.remove_entry tmpdir unless tmpdir.nil?
           end
 
           #
-          #  Re-open the network connection to get VMID and do final adjustments
+          #  Re-open the network connection to get VMID and do adjustments
           #  to vmx file.
           #
           Net::SSH.start(config.esxi_hostname, config.esxi_username,
@@ -621,64 +637,31 @@ module VagrantPlugins
 
             #  read each line in vmx to customize
             new_vmx_contents = ''
-            vmx_need_change_flag = false
             esxi_orig_vmx_file.each_line do |line|
 
               case line
 
-              # configure virtualHW ver
+              when /^memsize = /i
+                new_vmx_contents << "memsize = \"#{desired_guest_memsize}\"\n"
+
+              when /^numvcpus = /i
+                new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
+
               when /^virtualHW.version = /i
-                if guest_virtualhw_version.nil?
-                  new_vmx_contents << line
-                else
-                  new_vmx_contents << "virtualHW.version = \"#{guest_virtualhw_version}\"\n"
-                  vmx_need_change_flag = true
-                end
+                new_vmx_contents << "virtualHW.version = \"#{desired_virtualhw_version}\"\n"
 
               when /^guestOS = /i
-                if config.guest_guestos.nil?
-                  new_vmx_contents << line
-                else
-                  new_vmx_contents << "guestOS = \"#{config.guest_guestos}\"\n"
-                  vmx_need_change_flag = true
-                end
+                new_vmx_contents << "guestOS = \"#{desired_guestos}\"\n"
 
-              # configure mac and nic type.
               when /^ethernet[0-9]/i
-                nicindex = line[8].to_i
-                if line.match(/^ethernet[0-9].networkName = /i)
-                  new_vmx_contents << line
-                elsif line.match(/^ethernet0.virtualDev = /i)
-                  #  Update guest_nic_type if it's set, otherwise, save eth0 guest_nic_type
-                  #  for the remaining nics.  (ovftool doesn't set it...)
-                  if guest_nic_type.nil?
-                    guest_nic_type = line.gsub(/ethernet0.virtualDev = /i, '').gsub('"', '').strip
-                    new_vmx_contents << line
-                  else
-                    new_vmx_contents << line.gsub(/ = .*$/, " = \"#{guest_nic_type}\"\n")
-                    vmx_need_change_flag = true
-                  end
-                elsif (line.match(/^ethernet[0-9].addressType = /i) &&
-                    !config.guest_mac_address[nicindex].nil?)
-                  # Update MAC address if it's set
-                  guest_mac_address = config.guest_mac_address[nicindex]
-                  if guest_mac_address =~ /^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$/i
-                    new_vmx_contents << line.gsub(/ = .*$/, " = \"static\"")
-                    new_vmx_contents << line.gsub(/Type = .*$/, " = \"#{guest_mac_address}\"")
-                    vmx_need_change_flag = true
-                  elsif guest_mac_address == ''
-                    new_vmx_contents << line
-                  else
-                    new_vmx_contents << line
-                  end
-                end
+                #  Delete these entries.  We'll append them later.
+
               else
                 line_changed = false
                 if config.guest_custom_vmx_settings.is_a? Array
                   env[:machine].provider_config.guest_custom_vmx_settings.each do |k, v|
                     if line =~ /#{k} = /
                       new_vmx_contents << "#{k} = \"#{v}\"\n"
-                      vmx_need_change_flag = true
                       line_changed = true
                       env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                            message: "Custom vmx      : Modify #{k} = \"#{v}\"")
@@ -691,25 +674,29 @@ module VagrantPlugins
               end
             end
 
-            #  For all nics, configure guest_nic_type and enable nics
-            if guest_nic_type.nil?
-              guest_nic_type = "e1000"
-            end
+            #  For all nics, configure desired_nic_type and enable nics
+            desired_nic_type = 'e1000' if desired_nic_type.nil?
+
             if config.esxi_virtual_network.is_a? Array
               number_of_adapters = config.esxi_virtual_network.count
             else
               number_of_adapters = 1
             end
 
-            1.upto(number_of_adapters) do |index|
-              nic_index = index - 1
-              unless new_vmx_contents =~ /ethernet#{nic_index}.virtualDev = \"#{guest_nic_type}\"/i
-                new_vmx_contents << "ethernet#{nic_index}.virtualDev = \"#{guest_nic_type}\"\n"
-                vmx_need_change_flag = true
-              end
-              unless new_vmx_contents =~ /ethernet#{nic_index}.present = \"TRUE\"/i
-                new_vmx_contents << "ethernet#{nic_index}.present = \"TRUE\"\n"
-                vmx_need_change_flag = true
+            0.upto(number_of_adapters - 1) do |nic_index|
+              new_vmx_contents << "ethernet#{nic_index}.networkName = \"#{@guestvm_network[nic_index]}\"\n"
+              new_vmx_contents << "ethernet#{nic_index}.virtualDev = \"#{desired_nic_type}\"\n"
+              new_vmx_contents << "ethernet#{nic_index}.present = \"TRUE\"\n"
+              if config.guest_mac_address[nic_index].nil?
+                new_vmx_contents << "ethernet#{nic_index}.addressType = \"generated\"\n"
+              else
+                guest_mac_address = config.guest_mac_address[nic_index]
+                if guest_mac_address =~ /^([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}$/i
+                  new_vmx_contents << "ethernet#{nic_index}.addressType = \"static\"\n"
+                  new_vmx_contents << "ethernet#{nic_index}.address = \"#{guest_mac_address}\"\n"
+                else
+                  new_vmx_contents << "ethernet#{nic_index}.addressType = \"generated\"\n"
+                end
               end
             end
 
@@ -718,39 +705,28 @@ module VagrantPlugins
               env[:machine].provider_config.guest_custom_vmx_settings.each do |k, v|
                 unless new_vmx_contents =~ /#{k} = /
                   new_vmx_contents << "#{k} = \"#{v}\"\n"
-                  vmx_need_change_flag = true
                   env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                        message: "Custom vmx      : Append #{k} = \"#{v}\"")
                 end
               end
             end
 
-            #  If there was changes, update esxi
-            if vmx_need_change_flag == true
-              if config.debug =~ %r{vmx}i
-                puts "new vmx: #{new_vmx_contents}"
-                puts "\n\n"
-              end
-              r = ''
-              ssh.open_channel do |channel|
-                channel.exec("cat >#{dst_vmx_file}") do |ch, success|
-                  raise Errors::ESXiError,
-                        message: "Unable to update vmx file.\n"\
-                                 "  #{r}" unless success
-
-                  channel.send_data(new_vmx_contents)
-                  channel.eof!
-                end
-              end
-              ssh.loop
-            else
-              if config.debug =~ %r{vmx}i
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: 'ESXi vmx file    : Unmodified')
+            #  update vmx on esxi
+            if config.debug =~ %r{vmx}i
+              puts "new vmx: #{new_vmx_contents}"
+              puts "\n\n"
+            end
+            r = ''
+            ssh.open_channel do |channel|
+              channel.exec("cat >#{dst_vmx_file}") do |ch, success|
+                raise Errors::ESXiError,
+                      message: "Unable to update vmx file.\n"\
+                               "  #{r}" unless success
+                channel.send_data(new_vmx_contents)
+                channel.eof!
               end
             end
-
-
+            ssh.loop
 
             # Done
           end

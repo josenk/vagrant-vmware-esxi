@@ -111,6 +111,7 @@ module VagrantPlugins
             #
             #  Save network configuration for provisioner to do changes.
             #
+            sleep(1)
             env[:machine].guest.capability(
                 :configure_networks, networks_to_configure)
           end

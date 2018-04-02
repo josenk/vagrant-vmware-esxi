@@ -126,6 +126,14 @@ Vagrant.configure('2') do |config|
     #     Vagrant will NOT create a Resource pool it for you.
     #esxi.esxi_resource_pool = '/Vagrant'
 
+    #  Optional. Specify a VM to clone instead of uploading a box.
+    #    Vagrant can use any stopped VM as the source 'box'.   The VM must be
+    #    registered, stopped and must have the vagrant insecure ssh key installed.
+    #    If the VM is stored in a resource pool, it must be specified.  If this
+    #    option is specified, config.vm.box should be set to a dummy box.
+    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
+    #esxi.clone_from_vm = 'resource_pool/source_vm'
+
     #  OPTIONAL.  Guest VM name to use.
     #    The Default will be automatically generated.  It will be based on
     #    the guest_name_prefix (see below), your hostname & username and path.
