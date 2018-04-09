@@ -567,6 +567,36 @@ module VagrantPlugins
             esxi_guest_dir = dst_vmx_file + dst_vmx_dir.strip
             dst_vmx_file << dst_vmx
 
+            
+            #Great plugin
+            #Wondering if the the original disk provision size can be extended with something like the following: 
+
+            ##################
+            #in Vagrantfile:
+            ##################
+            #.
+            #config.vm.box = 'generic/centos6'
+            #
+            #esxi.guest_extend_original_disk_size = 10
+            #####commented out #esxi.guest_storage=[10,20]
+            #.
+
+            ##################
+            #in vagrant-vmware-esxi/action/createvm.rb
+            ##################
+            #if config.guest_extend_disk_size.nil?
+            #   guest_extend_disk_size = config.guest_extend_disk_size
+            #   cmd = "/bin/vmkfstools -X #{guest_extend_disk_size}G \"#{esxi_guest_dir}/disk_#{index}.vmdk\""
+
+            #   puts "cmd: #{cmd}" if config.debug =~ %r{true}i
+            #   r = ssh.exec!(cmd)
+            #   if r.exitstatus != 0
+            #     raise Errors::ESXiError,
+            #       message: "Unable extend disk (vmkfstools failed):\n"\
+            #          "  #{r}"\
+            #          '  Review ESXi logs for additional information!'
+            #end            
+            
             #  Create storage if required
             if config.guest_storage.is_a? Array
               index = -1
