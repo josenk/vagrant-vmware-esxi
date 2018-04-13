@@ -190,6 +190,13 @@ Vagrant.configure('2') do |config|
     #    'thin', 'thick', or 'eagerzeroedthick'
     #esxi.guest_disk_type = 'thick'
 
+    #  OPTIONAL. Boot disk size.
+    #    If unspecified, the boot disk size will be the same as the original
+    #    box.  You can specify a larger boot disk size in GB.  The extra disk space
+    #    will NOT automatically be available to your OS.  You will need to
+    #    create or modify partitions, LVM and/or filesystems.
+    #esxi.guest_boot_disk_size = 50
+
     #  OPTIONAL.  Create additional storage for guests.
     #    You can specify an array of up to 13 virtual disk sizes (in GB) that you
     #    would like the provider to create once the guest has been created.
@@ -268,6 +275,9 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.2.0 Add support to extend boot disk size.
+        Fix, add many more special characters to encode in esxi passwords.
+        
 * 2.1.0 Add support for clone_from_vm.
         Fix, use esxcli to get storage information.
 

@@ -17,6 +17,7 @@ module VagrantPlugins
       attr_accessor :guest_name_prefix
       attr_accessor :guest_guestos
       attr_accessor :guest_disk_type
+      attr_accessor :guest_boot_disk_size
       attr_accessor :guest_storage
       attr_accessor :guest_nic_type
       attr_accessor :guest_mac_address
@@ -73,6 +74,7 @@ module VagrantPlugins
         @guest_name_prefix = 'V-'
         @guest_guestos = nil
         @guest_disk_type = nil
+        @guest_boot_disk_size = nil
         @guest_storage = nil
         @guest_nic_type = nil
         @guest_mac_address = ["","","",""]
@@ -364,6 +366,8 @@ module VagrantPlugins
 
         @guest_username = nil if @guest_username == UNSET_VALUE
 
+        @guest_boot_disk_size = @guest_boot_disk_size.to_i if @guest_boot_disk_size.is_a? String
+        @guest_boot_disk_size = nil if @guest_boot_disk_size == 0
         @guest_storage = [@guest_storage.to_i] if @guest_storage.is_a? String
         @guest_storage = [@guest_storage] if @guest_storage.is_a? Integer
 
@@ -373,7 +377,6 @@ module VagrantPlugins
 
         @local_private_keys = @system_private_keys if @local_private_keys == nil
 
-        # @guest_virtualhw_version = @guest_virtualhw_version.to_i unless @guest_virtualhw_version.nil?
 
         if @local_lax =~ /true/i
           @local_lax = 'True'

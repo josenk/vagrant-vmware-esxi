@@ -3,7 +3,7 @@ require File.expand_path('../lib/vagrant-vmware-esxi/version', __FILE__)
 Gem::Specification.new do |s|
   s.name            = 'vagrant-vmware-esxi'
   s.version         = VagrantPlugins::ESXi::VERSION
-  s.date            = '2018-04-01'
+  s.date            = '2018-04-13'
   s.summary         = 'Vagrant ESXi provider plugin'
   s.description     = 'A Vagrant plugin that adds a VMware ESXi provider support'
   s.authors         = ['Jonathan Senkerik']

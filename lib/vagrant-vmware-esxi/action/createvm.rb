@@ -78,7 +78,7 @@ module VagrantPlugins
                     message: "Unable to create tmp dir #{tmpdir}"
             end
             #
-            #  Source from Clone Source
+            #  Source from Clone
             clone_from_vm_path = "vi://#{config.esxi_username}:#{$encoded_esxi_password}@#{config.esxi_hostname}/#{config.clone_from_vm}"
             ovf_cmd = "ovftool --noSSLVerify --overwrite --powerOffTarget --noDisks --targetType=vmx "\
                   "#{clone_from_vm_path} #{tmpdir}"
@@ -220,9 +220,7 @@ module VagrantPlugins
                                               "found, using #{availnetworks.first}")
               end
               networkID += 1
-              if networkID >= 4
-                break
-              end
+              break if networkID >= 4
             end
           end
 
@@ -322,7 +320,7 @@ module VagrantPlugins
 
           end
 
-          #  finalize vmx.
+          #  Some vmx didn't have this set???
           unless new_vmx_contents =~ %r{^numvcpus =}i
             new_vmx_contents << "numvcpus = \"#{desired_guest_numvcpus}\"\n"
           end
@@ -463,6 +461,10 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Disk Type       : #{guest_disk_type}")
           end
+          unless config.guest_boot_disk_size.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Boot Disk Size  : #{config.guest_boot_disk_size}GB")
+          end
           unless config.guest_storage.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Storage (GB)    : #{config.guest_storage[0..13]}")
@@ -549,8 +551,6 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "VMID            : #{env[:machine].id}")
 
-            #
-            #   -=-=-=-=-=-=-
             #  Destination (on esxi host) vmx file
             dst_vmx = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |\
                     grep vmPathName|awk '{print $NF}'|sed 's/[\"|,]//g'")
@@ -567,6 +567,29 @@ module VagrantPlugins
             esxi_guest_dir = dst_vmx_file + dst_vmx_dir.strip
             dst_vmx_file << dst_vmx
 
+            #  Extend boot disk if required
+            if config.guest_boot_disk_size.is_a? Integer
+              boot_disk = ssh.exec!("vim-cmd vmsvc/device.getdevices #{env[:machine].id} |"\
+                                     'grep -A10 "key = 2000"|grep fileName|head -1|grep -o "\/.*.vmdk"')
+
+              puts "Boot Disk: #{boot_disk}" if config.debug =~ %r{true}i
+
+              if boot_disk.exitstatus != 0
+                raise Errors::ESXiError,
+                      message: "Unable to determin boot disk"
+              end
+              cmd = "/bin/vmkfstools -X #{config.guest_boot_disk_size}G \"#{esxi_guest_dir}#{boot_disk.strip}\""
+              puts "cmd: #{cmd}" if config.debug =~ %r{true}i
+              r = ssh.exec!(cmd)
+              if r.exitstatus != 0
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "WARNING         : Unable to extend Boot Disk to #{config.guest_boot_disk_size}GB")
+              else
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "Extend Boot dsk : #{config.guest_boot_disk_size}GB")
+              end
+            end
+
             #  Create storage if required
             if config.guest_storage.is_a? Array
               index = -1
@@ -582,13 +605,11 @@ module VagrantPlugins
                 else
                   env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                        message: "Creating Storage: disk_#{index}.vmdk (#{store_size}GB)")
-
                   #  Figure out what SCSI slots are used.
                   r = ssh.exec!("vim-cmd vmsvc/device.getdevices #{machine.id}|"\
                     "grep -A 30 vim.vm.device.VirtualDisk|"\
                     "grep -e controllerKey -e unitNumber|grep -A 1 'controllerKey = 1000,'|"\
                     "grep unitNumber|awk '{print $3}'|sed 's/,//g'")
-
                   if r.length < 2
                     raise Errors::ESXiError,
                           message: "Unable to get guest storage configuration:\n"\
@@ -600,7 +621,6 @@ module VagrantPlugins
                     if r !~ %r{^#{slot.to_s}$}i
                       puts "Avail slot: #{slot}" if config.debug =~ %r{true}i
                       guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
-
                       cmd = "/bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} \"#{esxi_guest_dir}/disk_#{index}.vmdk\""
                       puts "cmd: #{cmd}" if config.debug =~ %r{true}i
                       r = ssh.exec!(cmd)
@@ -668,9 +688,7 @@ module VagrantPlugins
                     end
                   end
                 end
-                if line_changed == false
-                  new_vmx_contents << line
-                end
+                new_vmx_contents << line if line_changed == false
               end
             end
 
@@ -727,6 +745,13 @@ module VagrantPlugins
               end
             end
             ssh.loop
+
+            r = ssh.exec!("vim-cmd vmsvc/reload #{env[:machine].id}")
+            vmid = r
+            if r.exitstatus != 0
+              raise Errors::ESXiError,
+                    message: "Unable to reload vmx."
+            end
 
             # Done
           end

@@ -108,17 +108,39 @@ module VagrantPlugins
             #
             #  Encode special characters in PW
             #
-            $encoded_esxi_password = $esxi_password.gsub('%', '%25').gsub(\
-              '<', '%3c').gsub('>', '%3e').gsub(\
-              '[', '%5b').gsub(']', '%5d').gsub(\
-              '(', '%28').gsub(')', '%29').gsub(\
-              '@', '%40').gsub('#', '%23').gsub(\
-              '&', '%26').gsub(':', '%3a').gsub(\
-              '/', '%2f').gsub('\\','%5c').gsub(\
-              '"', '%22').gsub('\'','%27').gsub(\
-              '*', '%2a').gsub('?', '%3f').gsub(\
-              '$', '%24').gsub(' ', '%20').gsub(\
-              '/', '%2f')
+            $encoded_esxi_password = $esxi_password.gsub('%', '%25').\
+              gsub(' ', '%20').\
+              gsub('!', '%21').\
+              gsub('"', '%22').\
+              gsub('#', '%23').\
+              gsub('$', '%24').\
+              gsub('&', '%26').\
+              gsub('\'','%27').\
+              gsub('(', '%28').\
+              gsub(')', '%29').\
+              gsub('*', '%2a').\
+              gsub('+', '%2b').\
+              gsub(',', '%2c').\
+              gsub('-', '%2d').\
+              gsub('.', '%2e').\
+              gsub('/', '%2f').\
+              gsub(':', '%3a').\
+              gsub(';', '%3b').\
+              gsub('<', '%3c').\
+              gsub('=', '%3d').\
+              gsub('>', '%3e').\
+              gsub('?', '%3f').\
+              gsub('@', '%40').\
+              gsub('[', '%5b').\
+              gsub('\\','%5c').\
+              gsub(']', '%5d').\
+              gsub('^', '%5e').\
+              gsub('_', '%5f').\
+              gsub('`', '%60').\
+              gsub('{', '%7b').\
+              gsub('|', '%7c').\
+              gsub('}', '%7d').\
+              gsub('~', '%7e')      
 
             @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
                          "#{config.local_private_keys}")
