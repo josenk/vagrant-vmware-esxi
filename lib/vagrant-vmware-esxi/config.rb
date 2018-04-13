@@ -18,6 +18,7 @@ module VagrantPlugins
       attr_accessor :guest_guestos
       attr_accessor :guest_disk_type
       attr_accessor :guest_storage
+      attr_accessor :guest_extend_main_disk_size
       attr_accessor :guest_nic_type
       attr_accessor :guest_mac_address
       attr_accessor :guest_memsize
@@ -74,6 +75,7 @@ module VagrantPlugins
         @guest_guestos = nil
         @guest_disk_type = nil
         @guest_storage = nil
+        @guest_extend_main_disk_size = nil
         @guest_nic_type = nil
         @guest_mac_address = ["","","",""]
         @guest_memsize = nil

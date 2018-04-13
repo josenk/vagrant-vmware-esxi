@@ -467,6 +467,13 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Storage (GB)    : #{config.guest_storage[0..13]}")
           end
+          
+          unless config.guest_extend_main_disk_size.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                message: "Extend Primary Disk Provision Size(GB)    : #{config.guest_extend_main_disk_size}")
+          end          
+          
+          
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Guest OS type   : #{desired_guestos}")
           unless config.virtualhw_version.nil?
@@ -567,6 +574,26 @@ module VagrantPlugins
             esxi_guest_dir = dst_vmx_file + dst_vmx_dir.strip
             dst_vmx_file << dst_vmx
 
+            
+            vmdk_primary_file_location = "#{esxi_guest_dir}/#{desired_guest_name}.vmdk"
+            if config.guest_extend_main_disk_size.is_a? Integer
+              guest_extend_main_disk_size = config.guest_extend_main_disk_size
+              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                message: "Extending Main Storage: #{desired_guest_name}.vmdk (#{guest_extend_main_disk_size}GB)")              
+
+            cmd =  "/bin/vmkfstools -X #{guest_extend_main_disk_size}G \"#{vmdk_primary_file_location}\"" 
+              puts "cmd: #{cmd}" if config.debug =~ %r{true}i
+                r = ssh.exec!(cmd)
+                if r.exitstatus != 0
+                  raise Errors::ESXiError,
+                        message: "Unable to extend disk (vmkfstools failed):\n"\
+                                 " #{r}"\
+                                 ' Review ESXi logs for addiontal information!'
+                end
+            end            
+            
+            
+            
             #  Create storage if required
             if config.guest_storage.is_a? Array
               index = -1
