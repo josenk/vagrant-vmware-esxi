@@ -25,16 +25,16 @@ module VagrantPlugins
           config = env[:machine].provider_config
 
           #
-          #  Set global variable $esxi_password
+          #  Set global variable config.esxi_password
           #
-          if $esxi_password.nil?
+          if config.encoded_esxi_password.nil?
             if config.esxi_password =~ %r{^prompt:}i
               #
               #  Prompt for password
               #
               begin
                 print "#{config.esxi_username}@#{config.esxi_hostname} password:"
-                $esxi_password = STDIN.noecho(&:gets).chomp
+                config.esxi_password = STDIN.noecho(&:gets).chomp
                 puts ''
               rescue
                 begin
@@ -46,7 +46,7 @@ module VagrantPlugins
                   puts 'is a problem for you, ctrl-C / [ENTER] to exit and fix your stdin.'
                   puts ''
                   print "#{config.esxi_username}@#{config.esxi_hostname} password:"
-                  $esxi_password = $stdin.readline().chomp
+                  config.esxi_password = $stdin.readline().chomp
                   puts ''
                 rescue
                   raise Errors::ESXiError,
@@ -63,7 +63,7 @@ module VagrantPlugins
               end
               begin
                 stdin_pw = ENV[esxi_password_env]
-                $esxi_password = stdin_pw.chomp
+                config.esxi_password = stdin_pw.chomp
               rescue
                 raise Errors::ESXiError,
                       message: "Unable to read environment variable: #{esxi_password_env}"
@@ -84,7 +84,7 @@ module VagrantPlugins
                   fh = File.open(File.expand_path(esxi_password_file))
                   file_pw = fh.readline
                   fh.close
-                  $esxi_password = file_pw.chomp
+                  config.esxi_password = file_pw.chomp
                 else
                   raise Errors::ESXiError, message: "Unable to open #{esxi_password_file}"
                 end
@@ -95,20 +95,19 @@ module VagrantPlugins
               #
               #  use ssh keys
               #
-              $esxi_password = ''
               esxi_password_key = config.esxi_password.gsub(/key:/i, '').chomp
+              config.esxi_password = ''
               unless esxi_password_key.empty?
                 config.local_private_keys = esxi_password_key
               end
             else
               # Use plain text password from config
-              $esxi_password = config.esxi_password
             end
 
             #
             #  Encode special characters in PW
             #
-            $encoded_esxi_password = $esxi_password.gsub('%', '%25').\
+            config.encoded_esxi_password = config.esxi_password.gsub('%', '%25').\
               gsub(' ', '%20').\
               gsub('!', '%21').\
               gsub('"', '%22').\
@@ -140,7 +139,7 @@ module VagrantPlugins
               gsub('{', '%7b').\
               gsub('|', '%7c').\
               gsub('}', '%7d').\
-              gsub('~', '%7e')      
+              gsub('~', '%7e')
 
             @logger.info('vagrant-vmware-esxi, connect_esxi: local_private_keys: '\
                          "#{config.local_private_keys}")
@@ -151,9 +150,9 @@ module VagrantPlugins
             begin
               puts "RUBY_PLATFORM: #{RUBY_PLATFORM}" if config.debug =~ %r{true}i
               puts "Testing esxi connectivity" if config.debug =~ %r{ip}i
-              puts "esxi_ssh_keys: #{config.local_private_keys}" if config.debug =~ %r{ip}i
+              puts "esxi_ssh_keys: #{config.local_private_keys}" if config.debug =~ %r{password}i
               Net::SSH.start(config.esxi_hostname, config.esxi_username,
-                password:                   $esxi_password,
+                password:                   config.esxi_password,
                 port:                       config.esxi_hostport,
                 keys:                       config.local_private_keys,
                 timeout:                    20,

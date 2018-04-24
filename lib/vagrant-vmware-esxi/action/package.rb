@@ -94,7 +94,7 @@ module VagrantPlugins
 
             ovf_cmd = "ovftool --noSSLVerify -tt=VMX --name=\"#{boxname}\" "\
                       "#{overwrite_opts} vi://#{config.esxi_username}:"\
-                      "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
+                      "#{config.encoded_esxi_password}@#{config.esxi_hostname}"\
                       "?moref=vim.VirtualMachine:#{machine.id} #{tmpdir}"
 
             unless system "#{ovf_cmd}"

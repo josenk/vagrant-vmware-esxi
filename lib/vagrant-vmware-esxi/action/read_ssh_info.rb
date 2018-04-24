@@ -42,7 +42,7 @@ module VagrantPlugins
 
             #  Figure out vm_ipaddress
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
-              password:                   $esxi_password,
+              password:                   config.esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.local_private_keys,
               timeout:                    20,

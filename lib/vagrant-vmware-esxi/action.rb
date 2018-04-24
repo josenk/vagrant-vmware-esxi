@@ -160,7 +160,7 @@ module VagrantPlugins
               b1.use Provision
               b1.use SyncedFolderCleanup
               b1.use SyncedFolders
-              #b1.use SetHostname   # Still too buggy.  Tested with vagrant 2.0.4dev
+              b1.use SetHostname
             end
           end
         end

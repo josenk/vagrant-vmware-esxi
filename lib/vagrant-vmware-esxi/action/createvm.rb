@@ -42,10 +42,7 @@ module VagrantPlugins
           end
 
           # Set desired_guest_name
-          if !env[:machine].config.vm.hostname.nil?
-            # A hostname has been set, so use it.
-            desired_guest_name = env[:machine].config.vm.hostname.dup
-          elsif config.guest_name.nil?
+          if env[:machine].config.vm.hostname.nil? && config.guest_name.nil?
             #  Nothing set, so generate our own
             desired_guest_name = config.guest_name_prefix.strip
             desired_guest_name << `hostname`.partition('.').first.strip
@@ -54,9 +51,10 @@ module VagrantPlugins
             desired_guest_name << '-'
             base = File.basename machine.env.cwd.to_s
             desired_guest_name << base
-            config.guest_name = desired_guest_name
+          elsif !env[:machine].config.vm.hostname.nil? && config.guest_name.nil?
+            desired_guest_name = env[:machine].config.vm.hostname.dup
           else
-            # A guest_name has been set, so use it.
+            # Both are set, or only guest_name. So, we'll choose guest_name.
             desired_guest_name = config.guest_name.strip
           end
           desired_guest_name = desired_guest_name[0..252].gsub(/_/,'-').gsub(/[^0-9A-Za-z\-\.]/i, '').strip
@@ -77,11 +75,26 @@ module VagrantPlugins
               raise Errors::GeneralError,
                     message: "Unable to create tmp dir #{tmpdir}"
             end
+
+            ovf_debug = '--X:logLevel=info --X:logToConsole' if config.debug =~ %r{ovftool}i
             #
             #  Source from Clone
-            clone_from_vm_path = "vi://#{config.esxi_username}:#{$encoded_esxi_password}@#{config.esxi_hostname}/#{config.clone_from_vm}"
-            ovf_cmd = "ovftool --noSSLVerify --overwrite --powerOffTarget --noDisks --targetType=vmx "\
-                  "#{clone_from_vm_path} #{tmpdir}"
+            clone_from_vm_path = "vi://#{config.esxi_username}:#{config.encoded_esxi_password}@#{config.esxi_hostname}/#{config.clone_from_vm}"
+            ovf_cmd = "ovftool --noSSLVerify --overwrite --X:useMacNaming=false "\
+                      "--powerOffTarget --noDisks --targetType=vmx #{ovf_debug} "\
+                      "#{clone_from_vm_path} #{tmpdir}"
+            if config.debug =~ %r{password}i
+              @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
+              puts "ovftool command: #{ovf_cmd}"
+            elsif config.debug =~ %r{true}i
+              if config.encoded_esxi_password == ''
+                ovf_cmd_nopw = ovf_cmd
+              else
+                ovf_cmd_nopw = ovf_cmd.gsub(/#{config.encoded_esxi_password}/, '******')
+              end
+              puts "ovftool command: #{ovf_cmd_nopw}"
+            end
+
             unless system "#{ovf_cmd}"
               raise Errors::OVFToolError,
                     message: "Unable to access #{config.clone_from_vm}"
@@ -99,7 +112,7 @@ module VagrantPlugins
           #  Open the network connection
           #
           Net::SSH.start( config.esxi_hostname, config.esxi_username,
-            password:                   $esxi_password,
+            password:                   config.esxi_password,
             port:                       config.esxi_hostport,
             keys:                       config.local_private_keys,
             timeout:                    20,
@@ -491,11 +504,11 @@ module VagrantPlugins
           else
             src_path = clone_from_vm_path
           end
-          ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} "\
+          ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} #{ovf_debug} "\
                 "-dm=#{guest_disk_type} #{local_laxoption} "\
                 "-ds=\"#{@guestvm_dsname}\" --name=\"#{desired_guest_name}\" "\
                 "\"#{src_path}\" vi://#{config.esxi_username}:"\
-                "#{$encoded_esxi_password}@#{config.esxi_hostname}"\
+                "#{config.encoded_esxi_password}@#{config.esxi_hostname}"\
                 "#{esxi_resource_pool}"
 
           #
@@ -505,10 +518,10 @@ module VagrantPlugins
             @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
             puts "ovftool command: #{ovf_cmd}"
           elsif config.debug =~ %r{true}i
-            if $encoded_esxi_password == ''
+            if config.encoded_esxi_password == ''
               ovf_cmd_nopw = ovf_cmd
             else
-              ovf_cmd_nopw = ovf_cmd.gsub(/#{$encoded_esxi_password}/, '******')
+              ovf_cmd_nopw = ovf_cmd.gsub(/#{config.encoded_esxi_password}/, '******')
             end
             puts "ovftool command: #{ovf_cmd_nopw}"
           end
@@ -530,7 +543,7 @@ module VagrantPlugins
           #  to vmx file.
           #
           Net::SSH.start(config.esxi_hostname, config.esxi_username,
-            password:                   $esxi_password,
+            password:                   config.esxi_password,
             port:                       config.esxi_hostport,
             keys:                       config.local_private_keys,
             timeout:                    20,

@@ -29,7 +29,7 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.already_destroyed')
           else
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
-              password:                   $esxi_password,
+              password:                   config.esxi_password,
               port:                       config.esxi_hostport,
               keys:                       config.local_private_keys,
               timeout:                    20,

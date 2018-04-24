@@ -271,13 +271,18 @@ Known issues with vmware_esxi
 * Vagrant NFS synced folders is not reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, etc...
 * V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
 * Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
+* Setting the hostname might fail on some boxes.  Use most recent version of Vagrant for best results.   
 
 
 Version History
 ---------------
+* 2.2.1 Fix, clone_from_vm not working on MAC.
+        Fix, enabled SetHostname.
+        Fix, Multimachine not working with multiple esxi hosts and different passwords.
+
 * 2.2.0 Add support to extend boot disk size.
         Fix, add many more special characters to encode in esxi passwords.
-        
+
 * 2.1.0 Add support for clone_from_vm.
         Fix, use esxcli to get storage information.
 
