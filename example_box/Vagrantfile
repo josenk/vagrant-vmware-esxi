@@ -207,7 +207,7 @@ Vagrant.configure('2') do |config|
     #    of the time, you don't need to change this unless ovftool doesn't get
     #    the correct information from the box.  See my page on supported guest_guestos
     #    types for ESXI.
-    #    https://github.com/josenk/vagrant-vmware-esxi/ESXi_guest_guestos_types.md
+    #    https://github.com/josenk/vagrant-vmware-esxi/blob/master/ESXi_guestos_types.md
     #esxi.guest_guestos = 'centos-64'
 
     #  OPTIONAL. guest_virtualhw_version
