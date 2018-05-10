@@ -32,6 +32,7 @@ module VagrantPlugins
               #
               #  Prompt for password
               #
+              password_type = 'prompt'
               begin
                 print "#{config.esxi_username}@#{config.esxi_hostname} password:"
                 config.esxi_password = STDIN.noecho(&:gets).chomp
@@ -57,6 +58,7 @@ module VagrantPlugins
               #
               #  Get pw from environment variable
               #
+              password_type = 'env'
               esxi_password_env = config.esxi_password.gsub(/env:/i, '').chomp
               if esxi_password_env.length < 1
                 esxi_password_env = 'esxi_password'
@@ -72,6 +74,7 @@ module VagrantPlugins
               #
               #  Get password from file
               #
+              password_type = 'file'
               esxi_password_file = config.esxi_password.gsub(/file:/i, '').chomp
               if esxi_password_file.empty?
                 esxi_password_file = '~/.esxi_password'
@@ -95,6 +98,7 @@ module VagrantPlugins
               #
               #  use ssh keys
               #
+              password_type = 'key'
               esxi_password_key = config.esxi_password.gsub(/key:/i, '').chomp
               config.esxi_password = ''
               unless esxi_password_key.empty?
@@ -102,6 +106,7 @@ module VagrantPlugins
               end
             else
               # Use plain text password from config
+              password_type = 'plain'
             end
 
             #
@@ -177,16 +182,16 @@ module VagrantPlugins
                 end
               end
             rescue
-              if config.esxi_password =~ %r{^prompt:}i
-                access_error_message = 'Prompt for password'
-              elsif config.esxi_password =~ %r{^env:}i
-                access_error_message = "env:#{esxi_password_env}"
-              elsif config.esxi_password =~ %r{^file:}i
-                access_error_message = "file:#{esxi_password_file}"
-              elsif config.esxi_password =~ %r{^key:}i
-                access_error_message = "key:#{config.local_private_keys}"
+              if password_type == 'prompt'
+                access_error_message = 'Password incorrect.'
+              elsif password_type == 'env'
+                access_error_message = "Verify env:#{esxi_password_env}"
+              elsif password_type == 'file'
+                access_error_message = "Verify file:#{esxi_password_file}"
+              elsif password_type == 'key'
+                access_error_message = "Verify key:#{config.local_private_keys}"
               else
-                access_error_message = 'password in Vagrantfile'
+                access_error_message = 'Verify password in Vagrantfile is correct.'
               end
 
               env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',

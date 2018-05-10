@@ -27,7 +27,8 @@ Vagrant.configure('2') do |config|
 
 
   #  Use rsync and NFS synced folders. (or disable them)
-  config.vm.synced_folder('.', '/vagrant', type: 'rsync')
+  #    https://www.vagrantup.com/docs/synced-folders/
+  #config.vm.synced_folder('.', '/vagrant', type: 'rsync')
   config.vm.synced_folder('.', '/vagrant', type: 'nfs', disabled: true)
 
   #  Vagrant can set a static IP for the additional network interfaces.  Use
@@ -110,8 +111,8 @@ Vagrant.configure('2') do |config|
     #    IP addresses.  This specifies which 'ESXi virtual network' is used for
     #    each network interface in your VM.  For most OS's DHCP is the default,
     #    so, you will need a DHCP server for each virtual network.  To set a
-    #    static IP, see above 'config.vm.network'.
-    #esxi.esxi_virtual_network = ['vmnet1','vmnet2','vmnet3','vmnet4']
+    #    static IP for interface 2, 3 or 4. see above 'config.vm.network'.
+    #esxi.esxi_virtual_network = ['VM Network','VM Network2','VM Network3','VM Network4']
 
     #  OPTIONAL.  Specify a Disk Store
     #    If it's not specified, the Default is to use the least used Disk Store.
@@ -123,7 +124,7 @@ Vagrant.configure('2') do |config|
     #    from other systems on your esxi host.  The resource pool must
     #    already exist and have the proper permissions set.
     #
-    #     Vagrant will NOT create a Resource pool it for you.
+    #     This plugin will NOT create a Resource pool for you!
     #esxi.esxi_resource_pool = '/Vagrant'
 
     #  Optional. Specify a VM to clone instead of uploading a box.
@@ -131,7 +132,7 @@ Vagrant.configure('2') do |config|
     #    registered, stopped and must have the vagrant insecure ssh key installed.
     #    If the VM is stored in a resource pool, it must be specified.  If this
     #    option is specified, config.vm.box should be set to a dummy box.
-    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
+    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm
     #esxi.clone_from_vm = 'resource_pool/source_vm'
 
     #  OPTIONAL.  Guest VM name to use.

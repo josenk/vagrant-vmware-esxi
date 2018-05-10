@@ -63,7 +63,7 @@ module VagrantPlugins
         @esxi_hostname = nil
         @esxi_hostport = 22
         @esxi_username = 'root'
-        @esxi_password = nil
+        @esxi_password = ''
         @encoded_esxi_password = nil
         @esxi_disk_store = nil
         @esxi_virtual_network = nil

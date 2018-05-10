@@ -12,7 +12,7 @@ Refer to the WIKI for documentation, examples and other information...
 What's new!
 -----------
 Added support to clone from a VM!   Refer to the WIKI for documentation, example and other information.
->https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
+>https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm
 
 Features and Compatibility
 --------------------------
@@ -95,8 +95,9 @@ Vagrant.configure('2') do |config|
   #config.vm.box = 'puphpet/debian75-x64'
 
 
-  #  Use rsync and NFS synced folders. (or disable them)
-  config.vm.synced_folder('.', '/vagrant', type: 'rsync')
+  #  Use rsync and NFS synced folders. (or use the option to disable them)
+  #    https://www.vagrantup.com/docs/synced-folders/
+  #config.vm.synced_folder('.', '/vagrant', type: 'rsync')
   config.vm.synced_folder('.', '/vagrant', type: 'nfs', disabled: true)
 
   #  Vagrant can configure additional network interfaces using a static IP or
@@ -154,7 +155,7 @@ Vagrant.configure('2') do |config|
     #    Vagrant can use any stopped VM as the source 'box'.   The VM must be
     #    registered, stopped and must have the vagrant insecure ssh key installed.
     #    If the VM is stored in a resource pool, it must be specified.
-    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm.
+    #    See wiki: https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm
     #esxi.clone_from_vm = 'resource_pool/source_vm'
 
     #  OPTIONAL.  Guest VM name to use.
@@ -276,6 +277,8 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.2.2 Fix, Avoid crash if esxi_password is nil.
+
 * 2.2.1 Fix, clone_from_vm not working on MAC.
         Fix, enabled SetHostname.
         Fix, Multimachine not working with multiple esxi hosts and different passwords.
