@@ -200,7 +200,7 @@ Vagrant.configure('2') do |config|
     #  OPTIONAL.  Create additional storage for guests.
     #    You can specify an array of up to 13 virtual disk sizes (in GB) that you
     #    would like the provider to create once the guest has been created.
-    #esxi.guest_storage = [10,20]
+    #esxi.guest_storage = [ 10, 20, { size: 30, datastore: 'datastore1' } ]
 
     #  OPTIONAL. specify snapshot options.
     #esxi.guest_snapshot_includememory = 'true'
