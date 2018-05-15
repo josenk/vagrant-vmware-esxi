@@ -408,7 +408,15 @@ module VagrantPlugins
           if config.guest_storage.is_a? Array
             new_guest_storage = []
             0.upto(config.guest_storage.count - 1) do |index|
-              store_size = config.guest_storage[index].to_i
+              store = config.guest_storage[index]
+              if store.is_a? Hash
+                store_size = store[:size].to_i
+                guest_disk_datastore = store[:datastore].nil? ? @guestvm_dsname : store[:datastore]
+              else
+                store_size = store.to_i
+                guest_disk_datastore = @guestvm_dsname
+              end
+
               if store_size < 1
                 env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                      message: 'WARNING         : Ignored invalid '\
@@ -416,7 +424,7 @@ module VagrantPlugins
                                      "index[#{index}]")
                 new_guest_storage[index] = "invalid"
               else
-                new_guest_storage[index] = store_size
+                new_guest_storage[index] = { size: store_size, datastore: guest_disk_datastore }
               end
             end
             config.guest_storage = new_guest_storage
@@ -572,12 +580,12 @@ module VagrantPlugins
                     'grep vmPathName|grep -oE "\[.*\]"')
 
             dst_vmx_dir = ssh.exec!("vim-cmd vmsvc/get.config #{env[:machine].id} |\
-                    grep vmPathName|awk '{print $NF}'|awk -F'\/' '{print $1}'")
+                    grep vmPathName|awk '{print $NF}'|awk -F'\/' '{print $1}'").strip
 
 
             dst_vmx_file = "/vmfs/volumes/"
             dst_vmx_file << dst_vmx_ds.gsub('[','').gsub(']','').strip + "/"
-            esxi_guest_dir = dst_vmx_file + dst_vmx_dir.strip
+            esxi_guest_dir = dst_vmx_file + dst_vmx_dir
             dst_vmx_file << dst_vmx
 
             #  Extend boot disk if required
@@ -607,7 +615,9 @@ module VagrantPlugins
             if config.guest_storage.is_a? Array
               index = -1
               config.guest_storage.each do |store|
-                store_size = store.to_i
+                store_size = store[:size].to_i
+                guest_disk_datastore = store[:datastore].nil? ? @guestvm_dsname : store[:datastore]
+
                 index += 1
                 if store_size == 0
                   env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -634,7 +644,11 @@ module VagrantPlugins
                     if r !~ %r{^#{slot.to_s}$}i
                       puts "Avail slot: #{slot}" if config.debug =~ %r{true}i
                       guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
-                      cmd = "/bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} \"#{esxi_guest_dir}/disk_#{index}.vmdk\""
+                      guest_volume_path = "/vmfs/volumes/#{guest_disk_datastore}"
+                      guest_disk_folder = "#{guest_volume_path}/#{dst_vmx_dir}"
+                      folder_cmd = "[ -e #{guest_volume_path} ] && /bin/mkdir -p #{guest_disk_folder}"
+                      cmd = "#{folder_cmd} && /bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} \"#{guest_disk_folder}/disk_#{index}.vmdk\""
+
                       puts "cmd: #{cmd}" if config.debug =~ %r{true}i
                       r = ssh.exec!(cmd)
                       if r.exitstatus != 0
@@ -644,7 +658,7 @@ module VagrantPlugins
                                        '  Review ESXi logs for additional information!'
                       end
                       r = ssh.exec!("vim-cmd vmsvc/device.diskaddexisting #{env[:machine].id} "\
-                        "#{esxi_guest_dir}/disk_#{index}.vmdk 0 #{slot}")
+                        "#{guest_disk_folder}/disk_#{index}.vmdk 0 #{slot}")
                       if r.exitstatus != 0
                         raise Errors::ESXiError,
                               message: "Unable to create guest storage (vmkfstools failed):\n"\
