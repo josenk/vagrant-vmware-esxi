@@ -81,13 +81,13 @@ Vagrant.configure('2') do |config|
   #    the box/vm doesn't have the vmware tools installed.
   #
   # Here are some of the MANY examples....
-  config.vm.box = 'generic/centos7'
+  config.vm.box = 'hashicorp/precise64'
+  #config.vm.box = 'generic/centos7'
   #config.vm.box = 'generic/centos6'
   #config.vm.box = 'generic/fedora27'
   #config.vm.box = 'generic/freebsd11'
   #config.vm.box = 'generic/ubuntu1710'
   #config.vm.box = 'generic/debian9'
-  #config.vm.box = 'hashicorp/precise64'
   #config.vm.box = 'steveant/CentOS-7.0-1406-Minimal-x64'
   #config.vm.box = 'geerlingguy/centos7'
   #config.vm.box = 'geerlingguy/ubuntu1604'
@@ -200,7 +200,8 @@ Vagrant.configure('2') do |config|
 
     #  OPTIONAL.  Create additional storage for guests.
     #    You can specify an array of up to 13 virtual disk sizes (in GB) that you
-    #    would like the provider to create once the guest has been created.
+    #    would like the provider to create once the guest has been created.  You
+    #    can optionally specify the size and datastore using a hash.
     #esxi.guest_storage = [ 10, 20, { size: 30, datastore: 'datastore1' } ]
 
     #  OPTIONAL. specify snapshot options.
@@ -228,6 +229,10 @@ Vagrant.configure('2') do |config|
     #    If unspecified, the default is to produce an error if overwriting
     #    vm's and packages.
     #esxi.local_allow_overwrite = 'True'
+
+    #  Advanced Users.
+    #    If set to 'True', all WARNINGS will produce a FAILURE and vagrant will stop.
+    #esxi.local_failonwarning = 'True'
 
     #  Plugin debug output.
     #    Please send any bug reports with debug this output...
@@ -267,16 +272,21 @@ Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 * Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
-* Cleanup doesn't always destroy a VM that has been partially built.  Use the local_allow_overwrite = 'True' option if you need to force a rebuild, or you can delete the vm using the VSphere client.
+* Cleanup doesn't always destroy a VM that has been partially built.  To resolve this.  Use the local_allow_overwrite = 'True' option if you want to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 * Vagrant NFS synced folders is not reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, etc...
-* V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
+* Plugin V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
+* Vagrant 2.1.0 is not compatible with this plugin. Avoid Vagrant 2.1.0.
 * Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
-* Setting the hostname might fail on some boxes.  Use most recent version of Vagrant for best results.   
+* Setting the hostname on some boxes can cause 'vagrant up' to fail (generic/centos7 for example).  Avoid buggy boxes like generic/centos7, fix the box networking and repackage, or do not set the hostname via Vagrant.   
 
 
 Version History
 ---------------
+* 2.3.0 Add support to specify DiskStore for guest_storage virtual disks.
+        Add local_failonwarning Vagrantfil option.
+        Fix, make plugin more compatible with Ovftool 4.3.0
+
 * 2.2.2 Fix, Avoid crash if esxi_password is nil.
 
 * 2.2.1 Fix, clone_from_vm not working on MAC.

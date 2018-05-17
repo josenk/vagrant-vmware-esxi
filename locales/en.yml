@@ -16,7 +16,7 @@ en:
         There was an error talking to ESXi.
           %{message}
       esxi_config_error: |-
-        There was an ESXi configuration error.
+        There was a configuration error.
           %{message}
       esxi_ovftool_error: |-
         There was an OVF Tool error.

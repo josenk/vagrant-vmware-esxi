@@ -32,6 +32,7 @@ module VagrantPlugins
       attr_accessor :local_allow_overwrite
       attr_accessor :local_lax
       attr_accessor :local_use_ip_cache
+      attr_accessor :local_failonwarning
       attr_accessor :debug
       attr_accessor :supported_guest_virtualhw_versions
       attr_accessor :supported_guest_disk_types
@@ -88,6 +89,7 @@ module VagrantPlugins
         @local_allow_overwrite = 'False'
         @local_lax = 'False'
         @local_use_ip_cache = 'True'
+        @local_failonwarning = 'False'
         @debug = 'False'
         @saved_ipaddress = nil
         @supported_guest_virtualhw_versions = [
@@ -362,6 +364,7 @@ module VagrantPlugins
         @guest_boot_disk_size = nil if @guest_boot_disk_size == 0
         @guest_storage = [@guest_storage.to_i] if @guest_storage.is_a? String
         @guest_storage = [@guest_storage] if @guest_storage.is_a? Integer
+        @guest_storage = [{ size: @guest_storage[:size], datastore: @guest_storage[:datastore] }] if @guest_storage.is_a? Hash
 
         @esxi_virtual_network = [@esxi_virtual_network] if @esxi_virtual_network.is_a? String
 
@@ -386,6 +389,12 @@ module VagrantPlugins
           @local_use_ip_cache = 'False'
         else
           @local_use_ip_cache = 'True'
+        end
+
+        if @local_failonwarning =~ /true/i
+          @local_failonwarning = 'True'
+        else
+          @local_failonwarning = 'False'
         end
 
         if @guest_snapshot_includememory =~ /true/i

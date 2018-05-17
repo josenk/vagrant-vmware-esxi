@@ -4,8 +4,10 @@ require 'net/ssh'
 module VagrantPlugins
   module ESXi
     module Action
-      # This action creates a new vmx file (using overwrides from config file),
-      # then creates a new VM guest using ovftool.
+      # This action creates a new vmx file using a box or VM as it's source.
+      # Modifies the vmx file with customizations.
+      # Creates a new VM guest using ovftool.
+      # Does final tweeks to the VM, grow boot disk, create additional storage, etc...
       class CreateVM
         def initialize(app, _env)
           @app    = app
@@ -67,7 +69,12 @@ module VagrantPlugins
           if config.clone_from_vm.nil?
             vmx_file = Dir.glob("#{src_dir}/*.vmx").first
             @logger.info("vagrant-vmware-esxi, createvm: vmx_file: #{vmx_file}")
-            source_vmx_contents = File.read(vmx_file)
+            begin
+              source_vmx_contents = File.read(vmx_file)
+            rescue
+              raise Errors::GeneralError,
+                    message: "Unable to open #{src_dir}/*.vmx"
+            end
           else
             begin
               tmpdir = Dir.mktmpdir
@@ -76,12 +83,18 @@ module VagrantPlugins
                     message: "Unable to create tmp dir #{tmpdir}"
             end
 
-            ovf_debug = '--X:logLevel=info --X:logToConsole' if config.debug =~ %r{ovftool}i
+            if config.debug =~ %r{ovftool}i
+              ovf_debug = '--X:logLevel=info --X:logToConsole'
+            else
+               ovf_debug = "--X:logLevel=info --X:logFile=#{tmpdir}/ovftool.log"
+            end
+
             #
             #  Source from Clone
             clone_from_vm_path = "vi://#{config.esxi_username}:#{config.encoded_esxi_password}@#{config.esxi_hostname}/#{config.clone_from_vm}"
             ovf_cmd = "ovftool --noSSLVerify --overwrite --X:useMacNaming=false "\
                       "--powerOffTarget --noDisks --targetType=vmx #{ovf_debug} "\
+                      "--acceptAllEulas "\
                       "#{clone_from_vm_path} #{tmpdir}"
             if config.debug =~ %r{password}i
               @logger.info("vagrant-vmware-esxi, createvm: ovf_cmd #{ovf_cmd}")
@@ -145,6 +158,7 @@ module VagrantPlugins
                                    message: 'WARNING         : '\
                                             "esxi_disk_store not set, using "\
                                             "\"--- Least Used ---\"")
+              @iswarning = 'true'
             else
               desired_ds = config.esxi_disk_store.to_s
             end
@@ -161,10 +175,48 @@ module VagrantPlugins
                                    message: 'WARNING         : '\
                                             "Disk Store \"#{config.esxi_disk_store}\" not "\
                                             "found, using #{@guestvm_dsname}")
+              @iswarning = 'true'
             end
 
             @logger.info('vagrant-vmware-esxi, createvm: '\
                          "@guestvm_dsname: #{@guestvm_dsname}")
+
+            #
+            #  Validate guest Storage
+            if config.guest_storage.is_a? Array
+              new_guest_storage = []
+              0.upto(config.guest_storage.count - 1) do |index|
+                store = config.guest_storage[index]
+                if store.is_a? Hash
+                  store_size = store[:size].to_i
+                  guest_disk_datastore = store[:datastore].nil? ? @guestvm_dsname : store[:datastore]
+                  r = ssh.exec!("test -d /vmfs/volumes/#{guest_disk_datastore}")
+                  if (r.exitstatus != 0) || (guest_disk_datastore.length < 1)
+                    env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                         message: 'WARNING         : '\
+                                                  "Disk DataStore[#{index}]: #{guest_disk_datastore} not "\
+                                                  "found, using \"#{@guestvm_dsname}\"")
+                    @iswarning = 'true'
+                    guest_disk_datastore = @guestvm_dsname
+                  end
+                else
+                  store_size = store.to_i
+                  guest_disk_datastore = @guestvm_dsname
+                end
+
+                if store_size < 1
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: 'WARNING         : Ignored invalid '\
+                                       "storage size #{config.guest_storage[index]} at "\
+                                       "index[#{index}]")
+                  @iswarning = 'true'
+                  new_guest_storage[index] = { size: "invalid", datastore: guest_disk_datastore }
+                else
+                  new_guest_storage[index] = { size: store_size, datastore: guest_disk_datastore }
+                end
+              end
+              config.guest_storage = new_guest_storage
+            end
 
             #
             #  Figure out network
@@ -215,6 +267,7 @@ module VagrantPlugins
                                       message: 'WARNING         : '\
                                                "esxi_virtual_network[#{networkID}] not "\
                                                "set, using #{availnetworks.first}")
+                @iswarning = 'true'
               elsif availnetworks.include? aVirtNet
                 # Network interface is good
                 @guestvm_network << aVirtNet
@@ -231,6 +284,7 @@ module VagrantPlugins
                                      message: 'WARNING         : '\
                                               "#{aVirtNet_msg} not "\
                                               "found, using #{availnetworks.first}")
+                @iswarning = 'true'
               end
               networkID += 1
               break if networkID >= 4
@@ -256,6 +310,7 @@ module VagrantPlugins
                                    message: 'WARNING         : '\
                                             "GuestOS: #{config.guest_guestos} not "\
                                             "supported, using box/ovftool defaults")
+              @iswarning = 'true'
             end
           end
 
@@ -267,6 +322,7 @@ module VagrantPlugins
                                     message: 'WARNING         : '\
                                              "Invalid guest_virtualhw_version: #{config.guest_virtualhw_version},"\
                                              "using ovftool defaults")
+              @iswarning = 'true'
               config.guest_virtualhw_version = nil
             end
           end
@@ -279,6 +335,7 @@ module VagrantPlugins
                                    message: 'WARNING         : '\
                                             "NIC type: #{config.guest_nic_type} not "\
                                             "found, using ovftool defaults.")
+              @iswarning = 'true'
               config.guest_nic_type = nil
             end
           end
@@ -383,6 +440,7 @@ module VagrantPlugins
                   new_guest_mac_address[index] = "invalid"
                   env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                      message: "WARNING         : Ignored invalid mac address at index[#{index}]")
+                  @iswarning = 'true'
                 end
               end
             end
@@ -400,34 +458,9 @@ module VagrantPlugins
                                    message: 'WARNING         : '\
                                             "Disk type: #{config.guest_disk_type} not "\
                                             "found, using \"thin\"")
+              @iswarning = 'true'
               guest_disk_type = "thin"
             end
-          end
-
-          #  Validate guest Storage
-          if config.guest_storage.is_a? Array
-            new_guest_storage = []
-            0.upto(config.guest_storage.count - 1) do |index|
-              store = config.guest_storage[index]
-              if store.is_a? Hash
-                store_size = store[:size].to_i
-                guest_disk_datastore = store[:datastore].nil? ? @guestvm_dsname : store[:datastore]
-              else
-                store_size = store.to_i
-                guest_disk_datastore = @guestvm_dsname
-              end
-
-              if store_size < 1
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: 'WARNING         : Ignored invalid '\
-                                     "storage size #{config.guest_storage[index]} at "\
-                                     "index[#{index}]")
-                new_guest_storage[index] = "invalid"
-              else
-                new_guest_storage[index] = { size: store_size, datastore: guest_disk_datastore }
-              end
-            end
-            config.guest_storage = new_guest_storage
           end
 
           # Validate local_lax setting (use relaxed (--lax) ovftool option)
@@ -452,7 +485,7 @@ module VagrantPlugins
                                message: "Disk Store      : #{@guestvm_dsname}")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Resource Pool   : #{esxi_resource_pool}")
-          #
+
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: " --- Guest Summary ---")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -504,15 +537,24 @@ module VagrantPlugins
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: 'Allow Overwrite : True')
           end
+          unless config.local_failonwarning == 'False'
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: 'Fail on WARNING : True')
+          end
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "  --- Guest Build ---")
 
+          if (not @iswarning.nil?) and (config.local_failonwarning == 'True')
+            raise Errors::ESXiConfigError,
+                  message: "Exit due to WARNING.  See above for details."
+          end
           if config.clone_from_vm.nil?
             src_path = new_vmx_file
           else
             src_path = clone_from_vm_path
           end
           ovf_cmd = "ovftool --noSSLVerify #{overwrite_opts} #{ovf_debug} "\
+                "--acceptAllEulas "\
                 "-dm=#{guest_disk_type} #{local_laxoption} "\
                 "-ds=\"#{@guestvm_dsname}\" --name=\"#{desired_guest_name}\" "\
                 "\"#{src_path}\" vi://#{config.esxi_username}:"\
@@ -603,8 +645,13 @@ module VagrantPlugins
               puts "cmd: #{cmd}" if config.debug =~ %r{true}i
               r = ssh.exec!(cmd)
               if r.exitstatus != 0
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: "WARNING         : Unable to extend Boot Disk to #{config.guest_boot_disk_size}GB")
+                if config.local_failonwarning == 'True'
+                  raise Errors::ESXiError,
+                        message: "WARNING         : Unable to extend Boot Disk to #{config.guest_boot_disk_size}GB"
+                else
+                  env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                       message: "WARNING         : Unable to extend Boot Disk to #{config.guest_boot_disk_size}GB")
+                end
               else
                 env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                      message: "Extend Boot dsk : #{config.guest_boot_disk_size}GB")
@@ -615,7 +662,9 @@ module VagrantPlugins
             if config.guest_storage.is_a? Array
               index = -1
               config.guest_storage.each do |store|
+                puts "store[:size] : #{store[:size].to_s}"
                 store_size = store[:size].to_i
+                puts "store_size: #{store_size}"
                 guest_disk_datastore = store[:datastore].nil? ? @guestvm_dsname : store[:datastore]
 
                 index += 1
@@ -646,8 +695,9 @@ module VagrantPlugins
                       guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
                       guest_volume_path = "/vmfs/volumes/#{guest_disk_datastore}"
                       guest_disk_folder = "#{guest_volume_path}/#{dst_vmx_dir}"
-                      folder_cmd = "[ -e #{guest_volume_path} ] && /bin/mkdir -p #{guest_disk_folder}"
-                      cmd = "#{folder_cmd} && /bin/vmkfstools -c #{store_size}G -d #{guest_disk_type} \"#{guest_disk_folder}/disk_#{index}.vmdk\""
+                      folder_cmd = "/bin/mkdir -p #{guest_disk_folder}"
+                      cmd = "#{folder_cmd} && /bin/vmkfstools -c #{store_size}G "\
+                            "-d #{guest_disk_type} \"#{guest_disk_folder}/disk_#{index}.vmdk\""
 
                       puts "cmd: #{cmd}" if config.debug =~ %r{true}i
                       r = ssh.exec!(cmd)
