@@ -139,7 +139,7 @@ module VagrantPlugins
             #  Figure out DataStore
             r = ssh.exec!(
                     'esxcli storage filesystem list | grep "/vmfs/volumes/.*[VMFS|NFS]" | '\
-                    "sort -nk7 | awk -F"  " '{print $2}'")
+                    "sort -nk7 | awk -F \"  \" '{print $2}'")
 
             availvolumes = r.split(/\n/)
             if config.debug =~ %r{true}i
