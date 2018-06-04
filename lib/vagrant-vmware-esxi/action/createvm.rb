@@ -139,7 +139,7 @@ module VagrantPlugins
             #  Figure out DataStore
             r = ssh.exec!(
                     'esxcli storage filesystem list | grep "/vmfs/volumes/.*[VMFS|NFS]" | '\
-                    "sort -nk7 | awk '{print $2}'")
+                    "awk -F'  ' '{print $NF\",\"$2}' | sort -n | awk -F',' '{print $2}'")
 
             availvolumes = r.split(/\n/)
             if config.debug =~ %r{true}i
@@ -629,6 +629,7 @@ module VagrantPlugins
             dst_vmx_file << dst_vmx_ds.gsub('[','').gsub(']','').strip + "/"
             esxi_guest_dir = dst_vmx_file + dst_vmx_dir
             dst_vmx_file << dst_vmx
+            dst_vmx_file = dst_vmx_file.strip.gsub(/\s/, '\ ')
 
             #  Extend boot disk if required
             if config.guest_boot_disk_size.is_a? Integer
@@ -694,10 +695,10 @@ module VagrantPlugins
                       puts "Avail slot: #{slot}" if config.debug =~ %r{true}i
                       guest_disk_type = 'zeroedthick' if guest_disk_type == 'thick'
                       guest_volume_path = "/vmfs/volumes/#{guest_disk_datastore}"
-                      guest_disk_folder = "#{guest_volume_path}/#{dst_vmx_dir}"
+                      guest_disk_folder = "#{guest_volume_path}/#{dst_vmx_dir}".gsub(/\s/, '\ ')
                       folder_cmd = "/bin/mkdir -p #{guest_disk_folder}"
                       cmd = "#{folder_cmd} && /bin/vmkfstools -c #{store_size}G "\
-                            "-d #{guest_disk_type} \"#{guest_disk_folder}/disk_#{index}.vmdk\""
+                            "-d #{guest_disk_type} #{guest_disk_folder}/disk_#{index}.vmdk"
 
                       puts "cmd: #{cmd}" if config.debug =~ %r{true}i
                       r = ssh.exec!(cmd)

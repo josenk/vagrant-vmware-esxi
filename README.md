@@ -283,8 +283,10 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.3.1 Fix, Disk stores can now contain spaces.
+
 * 2.3.0 Add support to specify DiskStore for guest_storage virtual disks.
-        Add local_failonwarning Vagrantfil option.
+        Add local_failonwarning Vagrantfile option.
         Fix, make plugin more compatible with Ovftool 4.3.0
 
 * 2.2.2 Fix, Avoid crash if esxi_password is nil.
