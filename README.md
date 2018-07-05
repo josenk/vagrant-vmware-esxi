@@ -283,6 +283,8 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.3.2 Fix, vagrant ssh -c now works.
+
 * 2.3.1 Fix, Disk stores can now contain spaces.
 
 * 2.3.0 Add support to specify DiskStore for guest_storage virtual disks.
