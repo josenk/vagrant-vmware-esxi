@@ -59,6 +59,14 @@ module VagrantPlugins
           b.use ReadState
           b.use ReadSSHInfo
           b.use SSHExec
+        end
+      end
+
+      def self.action_ssh_run
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
+          b.use ReadState
+          b.use ReadSSHInfo
           b.use SSHRun
         end
       end
