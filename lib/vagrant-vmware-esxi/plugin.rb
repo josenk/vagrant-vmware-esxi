@@ -22,6 +22,11 @@ module VagrantPlugins
         Provider
       end
 
+      provider_capability('vmware_esxi', 'public_address') do
+        require_relative 'cap/public_address'
+        Cap::PublicAddress
+      end
+
       provider_capability('vmware_esxi', 'snapshot_list') do
         require_relative 'cap/snapshot_list'
         Cap::SnapshotList
