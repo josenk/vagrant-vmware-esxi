@@ -30,10 +30,16 @@ module VagrantPlugins
                 env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                      message: "Success, state is now \"#{@state}\"")
               end
+
             rescue Timeout::Error
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: "Failed, timeout waiting for \"#{@state}\"")
-              env[:result] = 'False' # couldn't reach state in time
+              if @state.to_s == 'running'
+                raise Errors::GeneralError,
+                      message: 'Failed, timeout waiting for "running".'
+              else
+                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                     message: "Timeout waiting for \"#{@state}\"")
+                env[:result] = 'False' # couldn't reach state in time
+              end
             end
           end
           env[:machine].provider_config.saved_ipaddress = nil

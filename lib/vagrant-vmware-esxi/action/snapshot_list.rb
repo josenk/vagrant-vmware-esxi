@@ -12,11 +12,11 @@ module VagrantPlugins
         end
 
         def call(env)
-          suspend(env)
+          snapshotlist(env)
           @app.call(env)
         end
 
-        def suspend(env)
+        def snapshotlist(env)
           @logger.info('vagrant-vmware-esxi, snapshot_list: start...')
 
           # Get config.

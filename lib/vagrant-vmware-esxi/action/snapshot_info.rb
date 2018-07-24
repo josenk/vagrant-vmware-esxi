@@ -12,11 +12,11 @@ module VagrantPlugins
         end
 
         def call(env)
-          suspend(env)
+          snapshotinfo(env)
           @app.call(env)
         end
 
-        def suspend(env)
+        def snapshotinfo(env)
           @logger.info('vagrant-vmware-esxi, snapshot_info: start...')
 
           # Get config.
@@ -26,9 +26,9 @@ module VagrantPlugins
           @logger.info("vagrant-vmware-esxi, snapshot_info: machine id: #{machine.id}")
           @logger.info("vagrant-vmware-esxi, snapshot_info: current state: #{env[:machine_state]}")
 
-          if env[:machine_state].to_s == 'not_created'
+          if machine.id == ''
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: 'Cannot snapshot_info in this state')
+                                 message: 'Cannot snapshot-info in this state')
           else
 
             Net::SSH.start(config.esxi_hostname, config.esxi_username,
@@ -43,9 +43,9 @@ module VagrantPlugins
               r = ssh.exec!(
                   "vim-cmd vmsvc/snapshot.get #{machine.id} 2>&1 | "\
                   "sed 's/Get Snapshot:/ /g' | "\
-                  "grep -v "\
+                  "grep -v -e '^  $' "\
                   "-e 'Snapshot Id ' "\
-                  "-e 'Snapshot Desciption ' "\
+                  "-e 'Snapshot Created On ' "\
                   "-e 'Snapshot State '")
 
               snapshotinfo = r

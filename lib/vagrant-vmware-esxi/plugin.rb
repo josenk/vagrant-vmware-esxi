@@ -22,6 +22,12 @@ module VagrantPlugins
         Provider
       end
 
+      #  Prints the IP address of the guest
+      command('address') do
+        require_relative 'command'
+        CapAddress
+      end
+
       provider_capability('vmware_esxi', 'snapshot_list') do
         require_relative 'cap/snapshot_list'
         Cap::SnapshotList

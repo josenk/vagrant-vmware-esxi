@@ -12,11 +12,11 @@ module VagrantPlugins
         end
 
         def call(env)
-          suspend(env)
+          snapshotrestore(env)
           @app.call(env)
         end
 
-        def suspend(env)
+        def snapshotrestore(env)
           @logger.info('vagrant-vmware-esxi, snapshot_restore: start...')
 
           # Get config.

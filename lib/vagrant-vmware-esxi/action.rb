@@ -78,6 +78,13 @@ module VagrantPlugins
         end
       end
 
+      def self.action_address
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
+          b.use Address
+        end
+      end
+
       def self.action_snapshot_info
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
@@ -201,6 +208,7 @@ module VagrantPlugins
       autoload :SnapshotDelete, action_root.join('snapshot_delete')
       autoload :SnapshotRestore, action_root.join('snapshot_restore')
       autoload :WaitForState, action_root.join('wait_for_state')
+      autoload :Address, action_root.join('address')
     end
   end
 end

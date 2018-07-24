@@ -33,7 +33,7 @@ Features and Compatibility
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
 * Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
 * Disks can be provisioned using thin, thick or eagerzeroedthick.
-* Create additional guest storage (upto 14 virtual disks).
+* Create additional guest storage (up to 14 virtual disks).
 * Specify GuestOS types, virtual HW version.
 * Any custom vmx settings can be added or modified.
 
@@ -213,7 +213,7 @@ Vagrant.configure('2') do |config|
     #esxi.guest_guestos = 'centos-64'
 
     #  OPTIONAL. guest_virtualhw_version
-    #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12 & 13.
+    #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12,13 & 14.
     #esxi.guest_virtualhw_version = '9'
 
     #  RISKY. guest_custom_vmx_settings
@@ -235,7 +235,7 @@ Vagrant.configure('2') do |config|
     #esxi.local_failonwarning = 'True'
 
     #  Plugin debug output.
-    #    Please send any bug reports with debug this output...
+    #    Please send any bug reports with this debug output...
     #esxi.debug = 'true'
 
   end
@@ -255,10 +255,11 @@ Basic usage
   * `vagrant ssh-config`
   * `vagrant snapshot push`
   * `vagrant snapshot list`
-  * `vagrant snapshot-info`
+  * `vagrant snapshot-info`   # esxi provided plugin. Output snapshot information/tree.
   * `vagrant snapshot pop`  
   * `vagrant halt`
   * `vagrant provision`
+  * `vagrant address`   # esxi provided plugin. Output IP address of guest.
 
 
 
@@ -272,17 +273,21 @@ Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 * Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
-* Cleanup doesn't always destroy a VM that has been partially built.  To resolve this.  Use the local_allow_overwrite = 'True' option if you want to force a rebuild, or you can delete the vm using the VSphere client.
+* If you break an install ([CTRL]-C), the cleanup task doesn't always destroy the VM that has been partially built.  To resolve this, use the local_allow_overwrite = 'True' Vagrantfile option if you want to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
-* Vagrant NFS synced folders is not reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, etc...
+* Vagrant NFS synced folders cannot not 100% reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, way to reach the vm guest.
 * Plugin V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
 * Vagrant 2.1.0 is not compatible with this plugin. Avoid Vagrant 2.1.0.
 * Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
-* Setting the hostname on some boxes can cause 'vagrant up' to fail (generic/centos7 for example).  Avoid buggy boxes like generic/centos7, fix the box networking and repackage, or do not set the hostname via Vagrant.   
+* Setting the hostname on some boxes can cause 'vagrant up' to fail if the network configuration wasn't previously cleaned up.  Avoid buggy boxes, fix the box networking and repackage, or do not set the hostname via Vagrant.   
 
 
 Version History
 ---------------
+* 2.4.0 Add support for 'vagrant address', output ip address of guest.
+        Fix, exit 1 on vagrant up if unable to reach "running" state.
+        Some code cleanup.
+
 * 2.3.2 Fix, vagrant ssh -c now works.
 
 * 2.3.1 Fix, Disk stores can now contain spaces.

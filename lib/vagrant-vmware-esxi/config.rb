@@ -93,7 +93,7 @@ module VagrantPlugins
         @debug = 'False'
         @saved_ipaddress = nil
         @supported_guest_virtualhw_versions = [
-          4,7,8,9,10,11,12,13
+          4,7,8,9,10,11,12,13,14
         ]
         @supported_guest_disk_types = [
           'thin',

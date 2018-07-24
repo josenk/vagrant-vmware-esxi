@@ -14,11 +14,11 @@ module VagrantPlugins
         end
 
         def call(env)
-          suspend(env)
+          package(env)
           @app.call(env)
         end
 
-        def suspend(env)
+        def package(env)
           @logger.info('vagrant-vmware-esxi, package: start...')
 
           # Get config.
