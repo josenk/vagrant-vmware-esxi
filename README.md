@@ -9,6 +9,12 @@ Refer to the WIKI for documentation, examples and other information...
 >https://github.com/josenk/vagrant-vmware-esxi/wiki
 
 
+Looking for volunteers to help with terraform-provider-esxi
+-----------------------------------------------------------
+If you are using vagrant as an esxi vm deployment tool (infa as code), you may want to consider a better tool.  Terraform.   Please give my terraform plugin a try and give me some feedback.  What you're trying to do, what's missing, what works, what doesn't work, etc...
+>https://github.com/josenk/terraform-provider-esxi
+
+
 What's new!
 -----------
 Added support to clone from a VM!   Refer to the WIKI for documentation, example and other information.
@@ -284,6 +290,8 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specifed.
+
 * 2.4.0 Add support for 'vagrant address', output ip address of guest.
         Fix, exit 1 on vagrant up if unable to reach "running" state.
         Some code cleanup.

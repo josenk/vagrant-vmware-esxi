@@ -81,7 +81,13 @@ module VagrantPlugins
       def self.action_address
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use Address
+          b.use Address, false
+        end
+      end
+      def self.action_address_multi
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
+          b.use Address, true
         end
       end
 
