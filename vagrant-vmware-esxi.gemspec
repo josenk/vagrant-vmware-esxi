@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.executables     = s.files.grep(%r{^bin/}) { |f| File.basename(f) }
   s.test_files      = s.files.grep(%r{^(test|spec|features)/})
 
-  s.add_runtime_dependency 'i18n', '~> 0.6'
+  s.add_runtime_dependency 'i18n', '~> 1.0'
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
   s.add_runtime_dependency "nokogiri", '> 1.5'

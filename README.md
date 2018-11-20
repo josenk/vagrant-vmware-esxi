@@ -290,6 +290,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.4.2 Fix i18n dependancy.
 * 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specifed.
 
 * 2.4.0 Add support for 'vagrant address', output ip address of guest.
