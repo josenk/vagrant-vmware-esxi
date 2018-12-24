@@ -287,7 +287,7 @@ module VagrantPlugins
                 @iswarning = 'true'
               end
               networkID += 1
-              break if networkID >= 4
+              break if networkID >= 11
             end
           end
 
