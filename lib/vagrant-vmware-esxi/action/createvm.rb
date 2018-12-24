@@ -139,7 +139,8 @@ module VagrantPlugins
             #  Figure out DataStore
             r = ssh.exec!(
                     'esxcli storage filesystem list | grep "/vmfs/volumes/.*[VMFS|NFS]" | '\
-                    "awk -F'  ' '{print $NF\",\"$2}' | sort -n | awk -F',' '{print $2}'")
+                    "awk '{printf $NF\",\" ; for(i=2;i<=NF-5;++i)printf $i\"\"FS ; printf \"\\n\"}' | "\
+                    "sort -n | awk -F',' '{print $2}' | sed 's/ $//g'")
 
             availvolumes = r.split(/\n/)
             if config.debug =~ %r{true}i
@@ -287,7 +288,7 @@ module VagrantPlugins
                 @iswarning = 'true'
               end
               networkID += 1
-              break if networkID >= 4
+              break if networkID >= 10
             end
           end
 
@@ -480,7 +481,7 @@ module VagrantPlugins
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "ESXi host       : #{config.esxi_hostname}")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                              message: "Virtual Network : #{@guestvm_network[0..3]}")
+                              message: "Virtual Network : #{@guestvm_network[0..9]}")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Disk Store      : #{@guestvm_dsname}")
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -505,7 +506,7 @@ module VagrantPlugins
                                message: "CPUS            : #{desired_guest_numvcpus}")
           unless config.guest_mac_address[0].eql? ''
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                 message: "Mac Address     : #{config.guest_mac_address[0..3]}")
+                                 message: "Mac Address     : #{config.guest_mac_address[0..9]}")
           end
           unless config.guest_nic_type.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
@@ -626,7 +627,7 @@ module VagrantPlugins
 
 
             dst_vmx_file = "/vmfs/volumes/"
-            dst_vmx_file << dst_vmx_ds.gsub('[','').gsub(']','').strip + "/"
+            dst_vmx_file << dst_vmx_ds.gsub('[','').gsub(']','').gsub('(','\(').gsub(')','\)').strip + "/"
             esxi_guest_dir = dst_vmx_file + dst_vmx_dir
             dst_vmx_file << dst_vmx
             dst_vmx_file = dst_vmx_file.strip.gsub(/\s/, '\ ')

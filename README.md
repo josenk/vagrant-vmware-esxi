@@ -111,7 +111,7 @@ Vagrant.configure('2') do |config|
   #  optionally netmask.  ESXi doesn't use the concept of public or private
   #  networks so both are valid here.  The primary network interface is considered the
   #  "vagrant management" interface and cannot be changed and this plugin
-  #  supports 4 NICS, so you can specify 3 entries here!
+  #  supports 10 NICS, so you can specify 9 entries here!
   #
   #  https://www.vagrantup.com/docs/networking/public_network.html
   #  https://www.vagrantup.com/docs/networking/private_network.html
@@ -146,7 +146,7 @@ Vagrant.configure('2') do |config|
 
     #  HIGHLY RECOMMENDED!  ESXi Virtual Network
     #    You should specify an ESXi Virtual Network!  If it's not specified, the
-    #    default is to use the first found.  You can specify up to 4 virtual
+    #    default is to use the first found.  You can specify up to 10 virtual
     #    networks using an array format.
     #esxi.esxi_virtual_network = ['VM Network','VM Network2','VM Network3','VM Network4']
 
@@ -181,7 +181,7 @@ Vagrant.configure('2') do |config|
     #  OPTIONAL.  Virtual CPUs override
     #esxi.guest_numvcpus = '2'
 
-    #  OPTIONAL & RISKY.  Specify up to 4 MAC addresses
+    #  OPTIONAL & RISKY.  Specify up to 10 MAC addresses
     #    The default is ovftool to automatically generate a MAC address.
     #    You can specify an array of MAC addresses using upper or lower case,
     #    separated by colons ':'.
@@ -290,6 +290,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual nics
 * 2.4.2 Fix i18n dependancy.
 * 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specifed.
 
