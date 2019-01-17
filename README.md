@@ -214,7 +214,7 @@ Vagrant.configure('2') do |config|
     #esxi.guest_snapshot_quiesced = 'true'
 
     #  RISKY. guest_guestos
-    #    https://github.com/josenk/vagrant-vmware-esxi/blob/master/ESXi_guestos_types.md
+    #    https://github.com/josenk/vagrant-vmware-esxi/ESXi_guest_guestos_types.md
     #esxi.guest_guestos = 'centos-64'
 
     #  OPTIONAL. guest_virtualhw_version
