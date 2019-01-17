@@ -9,20 +9,18 @@ Refer to the WIKI for documentation, examples and other information...
 >https://github.com/josenk/vagrant-vmware-esxi/wiki
 
 
-Looking for volunteers to help with terraform-provider-esxi
------------------------------------------------------------
-If you are using vagrant as an esxi vm deployment tool (infa as code), you may want to consider a better tool.  Terraform.   Please give my terraform plugin a try and give me some feedback.  What you're trying to do, what's missing, what works, what doesn't work, etc...
+Vagrant vs Terraform.
+---------------------
+If you are using vagrant as a deployment tool (infa as code), you may want to consider a better tool.  Terraform.  Vagrant is better for development environments, while Terraform is better at managing infrastructure.  Please give my terraform plugin a try and give me some feedback.  What you're trying to do, what's missing, what works, what doesn't work, etc...
+>https://www.vagrantup.com/intro/vs/terraform.html
+
 >https://github.com/josenk/terraform-provider-esxi
 
 
-What's new!
------------
-Added support to clone from a VM!   Refer to the WIKI for documentation, example and other information.
->https://github.com/josenk/vagrant-vmware-esxi/wiki/How-to-clone_from_vm
 
 Features and Compatibility
 --------------------------
-* Clone from VMs.  Clone a VM on the esxi host instead of transferring a box stored on your local pc.
+* Clone from VMs.  (see wiki)  Clone a VM on the esxi host instead of transferring a box stored on your local pc.
 * Any of the vmware Box formats should be compatible.
   * vmware_desktop, vmware_fusion, vmware_workstation...
   * To be fully functional, you must have open-vm-tools or vmware tools installed.
@@ -52,6 +50,7 @@ Requirements
   * Google 'How to enable ssh access on esxi'
 4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 5. In general, you should know how to use vagrant, esxi and some networking...
+6. You will most likly need a DHCP server on your primary network if you are deploying public boxes.
 
 Why this plugin?
 ----------------
@@ -269,19 +268,13 @@ Basic usage
 
 
 
-Upgrading from vagrant-vmware-esxi 1.x.x
-----------------------------------------
-See wiki for more information.
->https://github.com/josenk/vagrant-vmware-esxi/wiki/Upgrading-from-vagrant-vmware-esxi-1.x.x
-
-
 Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 * Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
 * If you break an install ([CTRL]-C), the cleanup task doesn't always destroy the VM that has been partially built.  To resolve this, use the local_allow_overwrite = 'True' Vagrantfile option if you want to force a rebuild, or you can delete the vm using the VSphere client.
 * ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
-* Vagrant NFS synced folders cannot not 100% reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, way to reach the vm guest.
+* Vagrant NFS synced folders cannot not be 100% reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, way to reach the vm guest.
 * Plugin V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
 * Vagrant 2.1.0 is not compatible with this plugin. Avoid Vagrant 2.1.0.
 * Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
@@ -291,8 +284,8 @@ Known issues with vmware_esxi
 Version History
 ---------------
 * 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual nics
-* 2.4.2 Fix i18n dependancy.
-* 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specifed.
+* 2.4.2 Fix i18n dependency.
+* 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specified.
 
 * 2.4.0 Add support for 'vagrant address', output ip address of guest.
         Fix, exit 1 on vagrant up if unable to reach "running" state.
