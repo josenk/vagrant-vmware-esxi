@@ -33,9 +33,9 @@ Features and Compatibility
 * suspend, resume, snapshots.
 * rsync & NFS using built-in Vagrant synced folders.
 * Provision using built-in Vagrant provisioner.
-* package your vm's into boxes.
+* package your VMs into boxes.
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
-* Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
+* Use Vagrant's private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
 * Disks can be provisioned using thin, thick or eagerzeroedthick.
 * Create additional guest storage (up to 14 virtual disks).
 * Specify GuestOS types, virtual HW version.
