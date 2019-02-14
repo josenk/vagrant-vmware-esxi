@@ -132,6 +132,8 @@ module VagrantPlugins
           'darwin14-64',
           'darwin15-64',
           'darwin16-64',
+          'darwin17-64',
+          'darwin18-64',
           'darwin-64',
           'darwin',
           'debian10-64',
