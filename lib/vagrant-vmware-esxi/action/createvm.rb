@@ -244,6 +244,9 @@ module VagrantPlugins
               next if type != :private_network && type != :public_network
               vm_network_index += 1
             end
+            if vm_network_index > 0
+              vm_network_index -= 1
+            end
 
             #  If there is more vm.network than esxi_virtual_network's configured
             #  I need to add more esxi_virtual_networks.  Setting each to ---NotSet---
