@@ -167,7 +167,7 @@ Vagrant.configure('2') do |config|
     #    The Default will be automatically generated.
     #esxi.guest_name = 'Custom-Guest-VM_Name'
 
-    #  OPTIONAL.  When automatically naming VMs, use this prifix.
+    #  OPTIONAL.  When automatically naming VMs, use this prefix.
     #esxi.guest_name_prefix = 'V-'
 
 
