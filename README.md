@@ -11,7 +11,7 @@ Refer to the WIKI for documentation, examples and other information...
 
 Vagrant vs Terraform.
 ---------------------
-If you are using vagrant as a deployment tool (infa as code), you may want to consider a better tool.  Terraform.  Vagrant is better for development environments, while Terraform is better at managing infrastructure.  Please give my terraform plugin a try and give me some feedback.  What you're trying to do, what's missing, what works, what doesn't work, etc...
+If you are using vagrant as a deployment tool (infra as code), you may want to consider a better tool:  Terraform.  Vagrant is better for development environments, while Terraform is better at managing infrastructure.  Please give my Terraform plugin a try and give me some feedback.  What you're trying to do, what's missing, what works, what doesn't work, etc...
 >https://www.vagrantup.com/intro/vs/terraform.html
 
 >https://github.com/josenk/terraform-provider-esxi
@@ -21,7 +21,7 @@ If you are using vagrant as a deployment tool (infa as code), you may want to co
 
 Features and Compatibility
 --------------------------
-* Clone from VMs.  (see wiki)  Clone a VM on the esxi host instead of transferring a box stored on your local pc.
+* Clone from VMs.  (see wiki)  Clone a VM on the ESXi host instead of transferring a box stored on your local pc.
 * Any of the vmware Box formats should be compatible.
   * vmware_desktop, vmware_fusion, vmware_workstation...
   * To be fully functional, you must have open-vm-tools or vmware tools installed.
@@ -34,7 +34,7 @@ Features and Compatibility
 * suspend, resume, snapshots.
 * rsync & NFS using built-in Vagrant synced folders.
 * Provision using built-in Vagrant provisioner.
-* package your vm's into boxes.
+* package your VMs into boxes.
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
 * Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
 * Disks can be provisioned using thin, thick or eagerzeroedthick.
@@ -48,7 +48,7 @@ Requirements
 2. This plugin requires ovftool from VMware.  Download from VMware website.  NOTE: ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
 >https://www.vmware.com/support/developer/ovf/
 3. You MUST enable ssh access on your ESXi hypervisor.
-  * Google 'How to enable ssh access on esxi'
+  * Google 'How to enable ssh access on ESXi'
 4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 5. In general, you should know how to use vagrant, esxi and some networking...
 6. You will most likely need a DHCP server on your primary network if you are deploying public boxes.
@@ -233,11 +233,11 @@ Vagrant.configure('2') do |config|
 
     #  DANGEROUS!  Allow Overwrite
     #    If unspecified, the default is to produce an error if overwriting
-    #    vm's and packages.
+    #    VMs and packages.
     #esxi.local_allow_overwrite = 'True'
 
     #  Advanced Users.
-    #    If set to 'True', all WARNINGS will produce a FAILURE and vagrant will stop.
+    #    If set to 'True', all WARNINGS will produce a FAILURE and Vagrant will stop.
     #esxi.local_failonwarning = 'True'
 
     #  Plugin debug output.
@@ -265,7 +265,7 @@ Basic usage
   * `vagrant snapshot pop`  
   * `vagrant halt`
   * `vagrant provision`
-  * `vagrant address`   # esxi provided plugin. Output IP address of guest.
+  * `vagrant address`   # ESXi provided plugin. Output IP address of guest.
 
 
 
@@ -273,9 +273,9 @@ Known issues with vmware_esxi
 -----------------------------
 * The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 * Invalid settings (bad IP address, netmask, MAC address, guest_custom_vmx_settings) could cause 'vagrant up' to fail.  Review vSphere console and/or ESXi logs to help debug why it failed.
-* If you break an install ([CTRL]-C), the cleanup task doesn't always destroy the VM that has been partially built.  To resolve this, use the local_allow_overwrite = 'True' Vagrantfile option if you want to force a rebuild, or you can delete the vm using the VSphere client.
-* ovftool installer for windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
-* Vagrant NFS synced folders cannot not be 100% reliable on multi-homed clients (your vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, way to reach the vm guest.
+* If you break an install ([CTRL]-C), the cleanup task doesn't always destroy the VM that has been partially built.  To resolve this, use the local_allow_overwrite = 'True' Vagrantfile option if you want to force a rebuild, or you can delete the vm using the vSphere client.
+* ovftool installer for Windows doesn't put ovftool.exe in your path.  You can manually set your path, or install ovftool in the \HashiCorp\Vagrant\bin directory.
+* Vagrant NFS synced folders cannot not be 100% reliable on multi-homed clients (your Vagrant pc/laptop/host).  There is no 100% reliable way to know which IP is the correct, most reliable, most desirable, way to reach the VM guest.
 * Plugin V2.0.1 - 2.0.5 is not compatible with Windows (to support ed25519 ssh keys, net-ssh requires libsodium but it's not compatible with Windows).  ed25519 support has been removed for now.   It will be added back when net-ssh 5.x goes out of beta.
 * Vagrant 2.1.0 is not compatible with this plugin. Avoid Vagrant 2.1.0.
 * Cygwin & gitbash have console issues. Ruby module io/console does not have support.  https://github.com/ruby/io-console/issues/2
@@ -284,13 +284,13 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
-* 2.4.4 Show stderr if unable to connect to esxi host. Update GuestOS types.
+* 2.4.4 Show stderr if unable to connect to ESXi host. Update GuestOS types.
 * 2.4.3 Update GuestOS types.
-* 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual nics
+* 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual NICs
 * 2.4.2 Fix i18n dependency.
 * 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specified.
 
-* 2.4.0 Add support for 'vagrant address', output ip address of guest.
+* 2.4.0 Add support for 'vagrant address', output IP address of guest.
         Fix, exit 1 on vagrant up if unable to reach "running" state.
         Some code cleanup.
 
@@ -300,16 +300,16 @@ Version History
 
 * 2.3.0 Add support to specify DiskStore for guest_storage virtual disks.
         Add local_failonwarning Vagrantfile option.
-        Fix, make plugin more compatible with Ovftool 4.3.0
+        Fix, make plugin more compatible with OVFTool 4.3.0
 
 * 2.2.2 Fix, Avoid crash if esxi_password is nil.
 
 * 2.2.1 Fix, clone_from_vm not working on MAC.
         Fix, enabled SetHostname.
-        Fix, Multimachine not working with multiple esxi hosts and different passwords.
+        Fix, Multimachine not working with multiple ESXi hosts and different passwords.
 
 * 2.2.0 Add support to extend boot disk size.
-        Fix, add many more special characters to encode in esxi passwords.
+        Fix, add many more special characters to encode in ESXi passwords.
 
 * 2.1.0 Add support for clone_from_vm.
         Fix, use esxcli to get storage information.
@@ -317,22 +317,22 @@ Version History
 * 2.0.7 Fix, Doesn't wait for running when executing "vagrant reload"
         Fix, "vagrant halt" will now attempt a graceful shutdown before doing a hard power off.
 
-* 2.0.6 Fix Windows compatibility by not supporting ed25519 ssh keys.  When net-ssh 5.x is released AND vagrant allows it's use, I will support ed25519 again.
+* 2.0.6 Fix Windows compatibility by not supporting ed25519 ssh keys.  When net-ssh 5.x is released AND Vagrant allows its use, I will support ed25519 again.
         Fix, encode '/' in esxi passwords.
         Fix, Get local IP address for NFS syncd folders.  Filter out localhost 127.0.0.0/8.
         Work-around 'prompt:' issues with unsupported consoles. Cygwin & gitbash, for example.
 
 * 2.0.5 Performance enhancement. Guest IP caching
-        Performance enhancement. Optimize esxi connectivity checks.
+        Performance enhancement. Optimize ESXi connectivity checks.
         Performance enhancement & bugfix.  Get local IP address for NFS syncd folders.
-        Fix, unable to get VMID if getallvms command produces any errors (for other vms).
+        Fix, unable to get VMID if getallvms command produces any errors (for other VMs).
 
-* 2.0.2 Add support to add additional storage to guest vms.
-        Fix, encode (space) in esxi passwords.
+* 2.0.2 Add support to add additional storage to guest VMs.
+        Fix, encode (space) in ESXi passwords.
 
 * 2.0.1 Updated version:
         Most Vagrantfile options have been renamed to be consistent and for clarity.
-        vagrant up, more organized summary by esxi/guest options.
+        vagrant up, more organized summary by ESXi/guest options.
         Lots of Code cleanup.
         Add support for snapshot options (includeMemory & quiesced)
         Snapshot save/push adds a description.
