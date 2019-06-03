@@ -178,7 +178,8 @@ module VagrantPlugins
                   @logger.info('vagrant-vmware-esxi, set_esxi_password: '\
                                "ESXi version: #{esxi_version}")
                   raise Errors::ESXiError,
-                        message: 'Unable to connect to ESXi host!'
+                        message: 'Unable to connect to ESXi host!'\
+                                "Error: #{esxi_version}"
                 end
               end
             rescue

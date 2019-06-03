@@ -15,6 +15,7 @@ If you are using vagrant as a deployment tool (infa as code), you may want to co
 >https://www.vagrantup.com/intro/vs/terraform.html
 
 >https://github.com/josenk/terraform-provider-esxi
+>https://github.com/josenk/vagrant-vmware-esxi
 
 
 
@@ -33,9 +34,9 @@ Features and Compatibility
 * suspend, resume, snapshots.
 * rsync & NFS using built-in Vagrant synced folders.
 * Provision using built-in Vagrant provisioner.
-* package your VMs into boxes.
+* package your vm's into boxes.
 * Create additional network interfaces, set nic type, MAC addresses, static IPs.
-* Use Vagrant's private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
+* Use Vagrants private_network, public_network options to set a static IP addresses on additional network interfaces.  (not the primary interface)
 * Disks can be provisioned using thin, thick or eagerzeroedthick.
 * Create additional guest storage (up to 14 virtual disks).
 * Specify GuestOS types, virtual HW version.
@@ -50,7 +51,7 @@ Requirements
   * Google 'How to enable ssh access on esxi'
 4. The boxes must have open-vm-tools or vmware-tools installed to properly transition to the 'running' state.
 5. In general, you should know how to use vagrant, esxi and some networking...
-6. You will most likly need a DHCP server on your primary network if you are deploying public boxes.
+6. You will most likely need a DHCP server on your primary network if you are deploying public boxes.
 
 Why this plugin?
 ----------------
@@ -283,6 +284,8 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.4.4 Show stderr if unable to connect to esxi host. Update GuestOS types.
+* 2.4.3 Update GuestOS types.
 * 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual nics
 * 2.4.2 Fix i18n dependency.
 * 2.4.1 Change/Fix output of 'vagrant address' when a single machine is configured or specified.
