@@ -49,7 +49,11 @@ module VagrantPlugins
           b.use SetESXiPassword
           b.use ReadState
           b.use Resume
-          b.use WaitForState, :running, 240
+          b.use Call, ReadState do |env1, b1|
+            if env1[:machine].state.id != :not_created
+              b1.use WaitForState, :running, 240
+            end
+          end
         end
       end
 
