@@ -8,6 +8,7 @@ module VagrantPlugins
       # This action reads the state of the machine and puts it in the
       # `:machine_state_id` key in the environment.
       class ReadState
+        @@nfs_valid_ids = []
         def initialize(app, env)
           @app    = app
           @logger = Log4r::Logger.new('vagrant_vmware_esxi::action::read_state')
@@ -17,13 +18,13 @@ module VagrantPlugins
           env[:machine_state] = read_state(env)
 
           #  Do NFS stuff
-          if (env[:machine_state].to_s.include? "running") && ($nfs_host_ip.nil?)
+          if (env[:machine_state].to_s.include? "running") && (@nfs_host_ip.nil?)
             ssh_info = env[:machine].ssh_info
             if defined?(ssh_info[:host])
               env[:nfs_machine_ip] = [ssh_info[:host]]
-              $nfs_machine_ip = [ssh_info[:host]].dup
-              env[:nfs_valid_ids] = [env[:machine].id]
-              $nfs_valid_ids = [env[:machine].id].dup
+              @nfs_machine_ip = [ssh_info[:host]].dup
+              @@nfs_valid_ids |= [env[:machine].id]
+              env[:nfs_valid_ids] = @@nfs_valid_ids
 
               begin
                 puts "Get local IP address for NFS. (pri)" if env[:machine].provider_config.debug =~ %r{ip}i
@@ -40,7 +41,7 @@ module VagrantPlugins
                 end
               end
 
-              $nfs_host_ip = env[:nfs_host_ip].dup
+              @nfs_host_ip = env[:nfs_host_ip].dup
               if env[:nfs_host_ip].nil?
                 #  Something bad happened above.  Give up on NFS.
                 env[:nfs_machine_ip] = nil
@@ -56,9 +57,9 @@ module VagrantPlugins
             end
           else
             # Use Cached entries
-            env[:nfs_machine_ip] = $nfs_machine_ip
-            env[:nfs_host_ip] = $nfs_host_ip
-            env[:nfs_valid_ids] = $nfs_valid_ids
+            env[:nfs_machine_ip] = @nfs_machine_ip
+            env[:nfs_host_ip] = @nfs_host_ip
+            env[:nfs_valid_ids] = @@nfs_valid_ids
           end
 
           @app.call(env)
