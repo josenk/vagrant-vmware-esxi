@@ -284,6 +284,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.4.5 Do not wait for `running` when resuming a VM that is not able to be resumed.
 * 2.4.4 Show stderr if unable to connect to ESXi host. Update GuestOS types.
 * 2.4.3 Update GuestOS types.
 * 2.4.3 Fix, Allow disk stores with "(" or ")" in their name.  Add support for up to 10 virtual NICs

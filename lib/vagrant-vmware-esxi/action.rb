@@ -47,10 +47,11 @@ module VagrantPlugins
       def self.action_resume
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use ReadState
-          b.use Resume
           b.use Call, ReadState do |env1, b1|
-            if env1[:machine].state.id != :not_created
+            if env1[:machine_state].to_s == 'not_created'
+              b1.use Resume
+            else
+              b1.use Resume
               b1.use WaitForState, :running, 240
             end
           end

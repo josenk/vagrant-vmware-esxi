@@ -30,7 +30,7 @@ module VagrantPlugins
              (env[:machine_state].to_s == 'running')
             env[:ui].info I18n.t('vagrant_vmware_esxi.already_powered_on')
           elsif env[:machine_state].to_s == 'not_created'
-           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                 message: 'Cannot resume in this state')
           elsif (env[:machine_state].to_s == 'powered_off') ||
                 (env[:machine_state].to_s == 'suspended')

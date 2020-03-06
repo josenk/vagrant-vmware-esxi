@@ -3,7 +3,8 @@ VMware ESXi 6.5 guestOS types
 
 Based on my research and some trial & error, I made this list of guestOS types that are compatible with ESXi 6.5.  I started with some api documenation from vmware that listed guestOS types.
 
->http://pubs.vmware.com/vsphere-6-5/index.jsp#com.vmware.wssdk.apiref.doc/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html
+>http://pubs.vmware.com/vsphere-65/topic/com.vmware.wssdk.apiref.doc/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html
+>https://code.vmware.com/apis/358/vsphere#/doc/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html
 
 But they didn't quite work when put directly in the vmx file...   I noticed none of my existing vmx files had the word "Guest" in guestOS line.  I also noticed in the list that the 64 bit entries were inconsistent.  (Some have _64, others are -64, and others are just 64.)   I removed the word Guest and set all the 64 bit OS's to be standard "-64".  The results seems to work for various OS's I installed, but I certainly didn't try all of these.    So here is my list...  Please report any errors.
 

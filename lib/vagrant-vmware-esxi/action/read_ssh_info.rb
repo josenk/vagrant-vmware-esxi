@@ -57,8 +57,8 @@ module VagrantPlugins
               #    Try to get first interface.  This is the prefered method
               #    when you have multiple network interfaces
               ssh_execute_cmd = "vim-cmd vmsvc/get.guest #{machine.id} 2>/dev/null |"
-              ssh_execute_cmd << 'grep -A 5 "deviceConfigId = 4000" |tail -1|'
-              ssh_execute_cmd << 'grep -oE "((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])"'
+              ssh_execute_cmd << 'sed \'1!G;h;$!d\' |awk \'/deviceConfigId = 4000/,/ipAddress/\' |'
+              ssh_execute_cmd << 'grep -oE "((1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])\\.){3}(1?[0-9][0-9]?|2[0-4][0-9]|25[0-5])" |tail -1'
               r = ssh.exec!(ssh_execute_cmd)
               ipaddress = r.strip
 

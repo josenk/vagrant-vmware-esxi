@@ -15,11 +15,15 @@ Gem::Specification.new do |s|
   s.files           = `git ls-files`.split($\)
   s.executables     = s.files.grep(%r{^bin/}) { |f| File.basename(f) }
   s.test_files      = s.files.grep(%r{^(test|spec|features)/})
+  s.require_path    = 'lib'
 
   s.add_runtime_dependency 'i18n', '~> 1.0'
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
-  s.add_runtime_dependency "nokogiri", '> 1.5'
+  s.add_runtime_dependency 'nokogiri', '~> 1.6'
+
+  s.add_development_dependency 'rake'
+  s.add_development_dependency 'rspec'
 
   # Needed only to support ed25519 ssh keys with net-ssh 4.x.  Won't need this for net-ssh 5.x.
   #s.add_runtime_dependency 'rbnacl', '>= 4.0', '< 5.0'
