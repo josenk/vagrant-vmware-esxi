@@ -202,7 +202,8 @@ module VagrantPlugins
                           "ESXi host access : #{access_error_message}")
 
               raise Errors::ESXiError,
-                    message: 'Unable to connect to ESXi host!'
+                    message: 'Unable to connect to ESXi host! '\
+                            "Error: #{$!}"
             end
           end
         end
