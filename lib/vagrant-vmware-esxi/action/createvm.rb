@@ -526,6 +526,10 @@ module VagrantPlugins
           end
           env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                message: "Guest OS type   : #{desired_guestos}")
+          unless config.guest_autostart.nil?
+            env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
+                                 message: "Autostart       : #{config.guest_autostart}")
+          end
           unless config.virtualhw_version.nil?
             env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
                                  message: "Virtual HW ver  : #{desired_virtualhw_version}")
@@ -830,6 +834,23 @@ module VagrantPlugins
             if r.exitstatus != 0
               raise Errors::ESXiError,
                     message: "Unable to reload vmx."
+            end
+
+            if !config.guest_autostart.nil?
+              if config.guest_autostart.casecmp('true') == 0
+                startOrder = ssh.exec!('vim-cmd hostsvc/autostartmanager/get_autostartseq |grep startOrder |awk -F"=" "{print $2}" | sort -n |tail -1 |grep -o "[0-9]*"').to_i + 1
+                startDelay = ssh.exec!('vim-cmd hostsvc/autostartmanager/get_defaults |grep startDelay |grep -o "[0-9]*"').to_i
+                stopDelay = ssh.exec!('vim-cmd hostsvc/autostartmanager/get_defaults |grep stopDelay |grep -o "[0-9]*"').to_i
+
+                cmd = "vim-cmd hostsvc/autostartmanager/update_autostartentry "\
+                      "#{env[:machine].id} PowerOn #{startDelay} #{startOrder} systemDefault #{stopDelay} systemDefault"
+                puts "cmd: #{cmd}"
+                r = ssh.exec!(cmd)
+                if r.exitstatus != 0
+                  raise Errors::ESXiError,
+                        message: "Unable to set autostart."
+                end
+              end
             end
 
             # Done

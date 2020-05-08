@@ -219,6 +219,13 @@ Vagrant.configure('2') do |config|
     #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12,13 & 14.
     #esxi.guest_virtualhw_version = '9'
 
+    #  OPTIONAL. guest_autostart
+    #    If unspecified, the guest VM will not autostart.  Set this to 'true' if
+    #    you want the guest VM to autostart when the esxi host is booted.  The autostart
+    #    options are all DEFAULT and there is no options in this plugin to modify them.
+    #    Valid options. 'true' or 'false'(default)
+    #esxi.guest_autostart = 'false'
+
     #  RISKY. guest_custom_vmx_settings
     #    You can specify an array of custom vmx settings to add (or to override
     #    existing settings).   ****  I don't do any validation, so if you

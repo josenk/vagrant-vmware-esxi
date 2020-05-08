@@ -28,6 +28,7 @@ module VagrantPlugins
       attr_accessor :guest_snapshot_includememory
       attr_accessor :guest_snapshot_quiesced
       attr_accessor :guest_custom_vmx_settings
+      attr_accessor :guest_autostart
       attr_accessor :local_private_keys
       attr_accessor :local_allow_overwrite
       attr_accessor :local_lax

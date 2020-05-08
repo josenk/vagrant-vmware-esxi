@@ -171,7 +171,6 @@ Vagrant.configure('2') do |config|
     #  OPTIONAL.  When automatically naming VMs, use this prefix.
     #esxi.guest_name_prefix = 'V-'
 
-
     #  OPTIONAL.  Set the guest username login.  The default is 'vagrant'.
     #esxi.guest_username = 'vagrant'
 
@@ -215,12 +214,16 @@ Vagrant.configure('2') do |config|
     #esxi.guest_snapshot_quiesced = 'true'
 
     #  RISKY. guest_guestos
-    #    https://github.com/josenk/vagrant-vmware-esxi/ESXi_guest_guestos_types.md
+    #    https://github.com/josenk/vagrant-vmware-esxi/wiki/VMware-ESXi-6.5-guestOS-types
     #esxi.guest_guestos = 'centos-64'
 
     #  OPTIONAL. guest_virtualhw_version
     #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12,13 & 14.
     #esxi.guest_virtualhw_version = '9'
+
+    #  OPTIONAL. Guest Autostart
+    #    Guest VM will autostart when esxi host is booted. 'true' or 'false'(default)
+    #esxi.guest_autostart = 'false'
 
     #  RISKY. guest_custom_vmx_settings
     #esxi.guest_custom_vmx_settings = [['vhv.enable','TRUE'], ['floppy0.present','TRUE']]
@@ -284,6 +287,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.5.0 Add support to set guest vm to Autostart.
 * 2.4.5 Do not wait for `running` when resuming a VM that is not able to be resumed.
 * 2.4.4 Show stderr if unable to connect to ESXi host. Update GuestOS types.
 * 2.4.3 Update GuestOS types.
