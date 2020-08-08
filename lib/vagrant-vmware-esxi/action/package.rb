@@ -92,7 +92,7 @@ module VagrantPlugins
                              '  install from http://www.vmware.com.'
             end
 
-            ovf_cmd = "ovftool --noSSLVerify -tt=VMX --name=\"#{boxname}\" "\
+            ovf_cmd = "ovftool --noSSLVerify -tt=VMX --X:useMacNaming=false --name=\"#{boxname}\" "\
                       "#{overwrite_opts} vi://#{config.esxi_username}:"\
                       "#{config.encoded_esxi_password}@#{config.esxi_hostname}"\
                       "?moref=vim.VirtualMachine:#{machine.id} #{tmpdir}"
