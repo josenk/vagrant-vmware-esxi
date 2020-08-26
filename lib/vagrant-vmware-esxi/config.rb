@@ -11,6 +11,11 @@ module VagrantPlugins
       attr_accessor :encoded_esxi_password
       attr_accessor :esxi_disk_store
       attr_accessor :esxi_virtual_network
+      attr_accessor :default_vswitch
+      attr_accessor :default_port_group
+      attr_accessor :destroy_unused_port_groups
+      attr_accessor :destroy_unused_vswitches
+      attr_accessor :destroy_unused_networks
       attr_accessor :esxi_resource_pool
       attr_accessor :clone_from_vm
       attr_accessor :guest_username
@@ -69,6 +74,11 @@ module VagrantPlugins
         @encoded_esxi_password = nil
         @esxi_disk_store = nil
         @esxi_virtual_network = nil
+        @default_vswitch = UNSET_VALUE
+        @default_port_group = UNSET_VALUE
+        @destroy_unused_port_groups = UNSET_VALUE
+        @destroy_unused_vswitches = UNSET_VALUE
+        @destroy_unused_networks = UNSET_VALUE
         @esxi_resource_pool = nil
         @clone_from_vm = nil
         @guest_username = 'vagrant'
@@ -379,6 +389,17 @@ module VagrantPlugins
         @esxi_virtual_network = [@esxi_virtual_network] if @esxi_virtual_network.is_a? String
 
         @esxi_virtual_network = ['--NotSet--'] if @esxi_virtual_network.nil?
+
+        @default_vswitch = "vSwitch0" if @default_vswitch == UNSET_VALUE
+        @default_port_group = "VM Network" if @default_port_group == UNSET_VALUE
+
+        @destroy_unused_port_groups = false if @destroy_unused_port_groups == UNSET_VALUE
+        @destroy_unused_vswitches = false if @destroy_unused_vswitches == UNSET_VALUE
+        @destroy_unused_networks = false if @destroy_unused_networks == UNSET_VALUE
+        if @destroy_unused_networks
+          @destroy_unused_port_groups = true
+          @destroy_unused_vswitches = true
+        end
 
         @local_private_keys = [
           '~/.ssh/id_rsa',

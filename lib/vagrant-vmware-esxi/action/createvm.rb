@@ -218,82 +218,9 @@ module VagrantPlugins
               end
               config.guest_storage = new_guest_storage
             end
-
-            #
-            #  Figure out network
-            #
-            r = ssh.exec!(
-                    'esxcli network vswitch standard list |'\
-                    'grep Portgroups | sed "s/^   Portgroups: //g" |'\
-                    'sed "s/,./\n/g"')
-            availnetworks = r.split(/\n/)
-            if config.debug =~ %r{true}i
-              env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                   message: "Avail Networks  : #{availnetworks}")
-            end
-            if (availnetworks == '') || (r.exitstatus != 0)
-              raise Errors::ESXiError,
-                    message: "Unable to get list of Virtual Networks:\n"\
-                             "#{r.stderr}"
-            end
-
-            #   How many vm.network are there?
-            vm_network_index = 0
-            env[:machine].config.vm.networks.each do |type, options|
-              # I only handle private and public networks
-              next if type != :private_network && type != :public_network
-              vm_network_index += 1
-            end
-
-            #  If there is more vm.network than esxi_virtual_network's configured
-            #  I need to add more esxi_virtual_networks.  Setting each to ---NotSet---
-            #  to give a warning below...
-            if vm_network_index >= config.esxi_virtual_network.count
-              config.esxi_virtual_network.count.upto(vm_network_index) do |index|
-                config.esxi_virtual_network << '--NotSet--'
-              end
-            end
-
-            #  Go through each esxi_virtual_network and make sure it's good.  If not
-            #  display a WARNING that we are choosing the first found.
-            @guestvm_network = []
-            networkID = 0
-            for aVirtNet in Array(config.esxi_virtual_network) do
-              if config.esxi_virtual_network == [''] ||
-                config.esxi_virtual_network[0] == '--NotSet--'
-                #  First (and only ) interface is not configure or not set
-                @guestvm_network = [availnetworks.first]
-                config.esxi_virtual_network = [availnetworks.first]
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                      message: 'WARNING         : '\
-                                               "esxi_virtual_network[#{networkID}] not "\
-                                               "set, using #{availnetworks.first}")
-                @iswarning = 'true'
-              elsif availnetworks.include? aVirtNet
-                # Network interface is good
-                @guestvm_network << aVirtNet
-              else
-                # Network interface is NOT good.
-                @guestvm_network[networkID] = availnetworks.first
-                config.esxi_virtual_network[networkID] = availnetworks.first
-                if aVirtNet == '--NotSet--'
-                  aVirtNet_msg = "esxi_virtual_network[#{networkID}]"
-                else
-                  aVirtNet_msg = aVirtNet
-                end
-                env[:ui].info I18n.t('vagrant_vmware_esxi.vagrant_vmware_esxi_message',
-                                     message: 'WARNING         : '\
-                                              "#{aVirtNet_msg} not "\
-                                              "found, using #{availnetworks.first}")
-                @iswarning = 'true'
-              end
-              networkID += 1
-              break if networkID >= 10
-            end
           end
 
-          @logger.info('vagrant-vmware-esxi, createvm: '\
-                       "esxi_virtual_network: #{@guestvm_network}")
+          collect_networks(env)
 
           #  Set some defaults
           desired_guest_memsize = config.guest_memsize.to_s.to_i unless config.guest_memsize.nil?
@@ -779,7 +706,7 @@ module VagrantPlugins
             desired_nic_type = 'e1000' if desired_nic_type.nil?
 
             if config.esxi_virtual_network.is_a? Array
-              number_of_adapters = config.esxi_virtual_network.count
+              number_of_adapters = env[:machine].config.vm.networks.count
             else
               number_of_adapters = 1
             end
@@ -855,6 +782,15 @@ module VagrantPlugins
 
             # Done
           end
+        end
+
+        def collect_networks(env)
+          @guestvm_network = [env[:machine].provider_config.default_port_group]
+          env[:machine].config.vm.networks.each do |type, options|
+            @guestvm_network << options[:esxi__port_group] if options[:esxi__port_group]
+          end
+
+          @logger.info("Networks: #{@guestvm_network}")
         end
       end
     end

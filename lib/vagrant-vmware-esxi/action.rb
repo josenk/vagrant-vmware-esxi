@@ -140,6 +140,18 @@ module VagrantPlugins
             b1.use Halt unless env1[:machine_state] == 'powered_off'
             b1.use ReadState
             b1.use Destroy
+            b1.use DestroyUnusedNetworks
+          end
+        end
+      end
+
+      def self.action_destroy_networks
+        Vagrant::Action::Builder.new.tap do |b|
+          b.use SetESXiPassword
+          b.use Call, DestroyUnusedNetworksConfirm do |env1, b1|
+            if env1[:result]
+              b1.use DestroyUnusedNetworks
+            end
           end
         end
       end
@@ -164,6 +176,7 @@ module VagrantPlugins
           b.use ConfigValidate
           b.use HandleBox
           b.use ReadState
+          b.use CreateNetwork
           b.use CreateVM
           b.use ReadState
           b.use Boot
@@ -203,6 +216,7 @@ module VagrantPlugins
       action_root = Pathname.new(File.expand_path('../action', __FILE__))
       autoload :SetESXiPassword, action_root.join('esxi_password')
       autoload :CreateVM, action_root.join('createvm')
+      autoload :CreateNetwork, action_root.join('create_network')
       autoload :ReadState, action_root.join('read_state')
       autoload :ReadSSHInfo, action_root.join('read_ssh_info')
       autoload :SetNetworkIP, action_root.join('set_network_ip')
@@ -210,6 +224,8 @@ module VagrantPlugins
       autoload :Halt, action_root.join('halt')
       autoload :Shutdown, action_root.join('shutdown')
       autoload :Destroy, action_root.join('destroy')
+      autoload :DestroyUnusedNetworks, action_root.join('destroy_unused_networks')
+      autoload :DestroyUnusedNetworksConfirm, action_root.join('destroy_unused_networks_confirm')
       autoload :Suspend, action_root.join('suspend')
       autoload :Resume, action_root.join('resume')
       autoload :Package, action_root.join('package')
