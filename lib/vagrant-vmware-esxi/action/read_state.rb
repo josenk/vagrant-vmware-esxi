@@ -29,7 +29,11 @@ module VagrantPlugins
               begin
                 puts "Get local IP address for NFS. (pri)" if env[:machine].provider_config.debug =~ %r{ip}i
                 #  The Standard way to get your IP.  Get your hostname, resolv it.
-                env[:nfs_host_ip] = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+                addr_info = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)
+
+                non_localhost = addr_info.select{ |info| info[3] !~ /^127./}
+
+                env[:nfs_host_ip] = non_localhost[0][3]
               rescue
                 puts "Get local IP address for NFS. (alt)" if env[:machine].provider_config.debug =~ %r{ip}i
                 #  Alt method.  Get list of ip_addresses on system and use the first.
