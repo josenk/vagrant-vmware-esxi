@@ -3,6 +3,7 @@ vagrant-vmware-esxi plugin
 This is a Vagrant plugin that adds a VMware ESXi provider support.  This allows Vagrant to control and provision VMs directly on an ESXi hypervisor without a need for vCenter or VShpere.   ESXi hypervisor is a free download from VMware!
 >https://www.vmware.com/go/get-free-esxi
 
+
 Documentation:
 -------------
 Refer to the WIKI for documentation, examples and other information...  
@@ -16,7 +17,6 @@ If you are using vagrant as a deployment tool (infra as code), you may want to c
 
 >https://github.com/josenk/terraform-provider-esxi
 >https://github.com/josenk/vagrant-vmware-esxi
-
 
 
 Features and Compatibility
@@ -41,6 +41,7 @@ Features and Compatibility
 * Create additional guest storage (up to 14 virtual disks).
 * Specify GuestOS types, virtual HW version.
 * Any custom vmx settings can be added or modified.
+
 
 Requirements
 ------------
@@ -287,6 +288,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.5.1 Fix, filter localhost from local IP detection for nfs sync.
 * 2.5.0 Add support to set guest vm to Autostart.
 * 2.4.5 Do not wait for `running` when resuming a VM that is not able to be resumed.
 * 2.4.4 Show stderr if unable to connect to ESXi host. Update GuestOS types.
