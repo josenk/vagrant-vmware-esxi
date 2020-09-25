@@ -288,6 +288,7 @@ Known issues with vmware_esxi
 
 Version History
 ---------------
+* 2.5.2 Fix, snapshot restore will execute regardless of current state.
 * 2.5.1 Fix, filter localhost from local IP detection for nfs sync.
 * 2.5.0 Add support to set guest vm to Autostart.
 * 2.4.5 Do not wait for `running` when resuming a VM that is not able to be resumed.

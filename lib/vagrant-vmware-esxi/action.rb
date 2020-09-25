@@ -113,8 +113,11 @@ module VagrantPlugins
       def self.action_snapshot_restore
         Vagrant::Action::Builder.new.tap do |b|
           b.use SetESXiPassword
-          b.use Halt
-          b.use Call, WaitForState, :powered_off, 240 do |env1, b1|
+          b.use Call, ReadState do |env1, b1|
+            b1.use Halt unless env1[:machine_state] == 'powered_off'
+            b1.use ReadState
+          end
+          b.use Call, WaitForState, :powered_off, 30 do |env1, b1|
             if env1[:result] == 'True'
               b1.use SnapshotRestore
               b1.use ReadState
