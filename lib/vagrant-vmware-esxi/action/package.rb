@@ -56,11 +56,15 @@ module VagrantPlugins
                              "  local_allow_overwrite='True' in Vagrantfile for force."
             end
 
+            is_mingw = Gem::Platform.local.os == "mingw32"
+
             # Find a tar/bsdtar
             if system 'tar --version >/dev/null 2>&1'
               tar_cmd = 'tar'
             elsif system 'bsdtar --version >/dev/null 2>&1'
               tar_cmd = 'bsdtar'
+            elsif is_mingw && system('tar --version > nul 2>&1')
+              tar_cmd = 'tar'  
             else
               raise Errors::ESXiConfigError,
                     message: 'unable to find tar in your path.'
@@ -120,7 +124,8 @@ module VagrantPlugins
             end
 
             env[:ui].info("tarring #{boxname}.box")
-            unless system "cd #{tmpdir}/#{boxname} ; #{tar_cmd} cvf ../../#{boxname}.box *"
+            combinator_string = is_mingw ? "&&" : ";"
+            unless system "cd #{tmpdir}/#{boxname} #{combinator_string} #{tar_cmd} cvf ../../#{boxname}.box *"
               raise Errors::GeneralError,
                     message: 'tar command failed.'
             end
