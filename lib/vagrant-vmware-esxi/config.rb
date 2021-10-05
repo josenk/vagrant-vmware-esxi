@@ -94,7 +94,7 @@ module VagrantPlugins
         @debug = 'False'
         @saved_ipaddress = nil
         @supported_guest_virtualhw_versions = [
-          4,7,8,9,10,11,12,13,14
+          4,7,8,9,10,11,12,13,14,15,16,17,18
         ]
         @supported_guest_disk_types = [
           'thin',
@@ -233,6 +233,7 @@ module VagrantPlugins
           'vmkernel5',
           'vmkernel65',
           'vmkernel6',
+          'vmkernel7',
           'vmkernel',
           'vmwarephoton-64',
           'win2000advserv',

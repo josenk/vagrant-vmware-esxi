@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.test_files      = s.files.grep(%r{^(test|spec|features)/})
   s.require_path    = 'lib'
 
-  s.add_runtime_dependency 'i18n', '~> 1.0'
+  s.add_runtime_dependency 'i18n', '~> 1.8'
   s.add_runtime_dependency 'log4r', '~> 1.1'
   s.add_runtime_dependency "iniparse", '> 1.0'
   s.add_runtime_dependency 'nokogiri', '~> 1.6'

@@ -219,7 +219,7 @@ Vagrant.configure('2') do |config|
     #esxi.guest_guestos = 'centos-64'
 
     #  OPTIONAL. guest_virtualhw_version
-    #    ESXi 6.5 supports these versions. 4,7,8,9,10,11,12,13 & 14.
+    #    ESXi 6.7 supports these versions. 4,7,8,9,10,11,12,13 & 14.
     #esxi.guest_virtualhw_version = '9'
 
     #  OPTIONAL. Guest Autostart
@@ -286,8 +286,16 @@ Known issues with vmware_esxi
 * Setting the hostname on some boxes can cause 'vagrant up' to fail if the network configuration wasn't previously cleaned up.  Avoid buggy boxes, fix the box networking and repackage, or do not set the hostname via Vagrant.   
 
 
+Donations
+---------
+I work very hard to produce a stable, well documented product.  I appreciate any payments or donations for my efforts.
+* Bitcoin: 12WCUyop3XGiaux8REvmDJ6kWFGoLnM4j9
+* paypal:  josenk at jintegrate.co
+
+
 Version History
 ---------------
+* 2.5.3 Fix, Add hw_versions and GuestOS vmkernel7
 * 2.5.2 Fix, snapshot restore will execute regardless of current state.
 * 2.5.1 Fix, filter localhost from local IP detection for nfs sync.
 * 2.5.0 Add support to set guest vm to Autostart.
