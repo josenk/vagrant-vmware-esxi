@@ -295,6 +295,7 @@ I work very hard to produce a stable, well documented product.  I appreciate any
 
 Version History
 ---------------
+* 2.5.4 Add support for esxi 7.0.2 new os types.
 * 2.5.3 Fix, Add hw_versions and GuestOS vmkernel7
 * 2.5.2 Fix, snapshot restore will execute regardless of current state.
 * 2.5.1 Fix, filter localhost from local IP detection for nfs sync.
