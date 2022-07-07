@@ -1,4 +1,5 @@
 require 'pathname'
+require 'vagrant-vmware-esxi/ext'
 require 'vagrant-vmware-esxi/plugin'
 
 module VagrantPlugins
