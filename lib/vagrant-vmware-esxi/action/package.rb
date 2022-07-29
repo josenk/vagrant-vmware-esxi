@@ -43,7 +43,7 @@ module VagrantPlugins
               overwrite_opts = nil
             end
 
-            boxname = env['package.output'].gsub('/', '-VAGRANTSLASH-')
+            boxname = env['package.output'].split("/").last.chomp(".box")
             tmpdir = "ZZZZ_tmpdir"
             Dir.mkdir(tmpdir) unless File.exists?(tmpdir)
 
