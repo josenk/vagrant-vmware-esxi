@@ -94,7 +94,7 @@ module VagrantPlugins
         @debug = 'False'
         @saved_ipaddress = nil
         @supported_guest_virtualhw_versions = [
-          4,7,8,9,10,11,12,13,14,15,16,17,18,19
+          4,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
         ]
         @supported_guest_disk_types = [
           'thin',
@@ -143,6 +143,8 @@ module VagrantPlugins
           'debian10',
           'debian11-64',
           'debian11',
+          'debian12-64',
+          'debian12',
           'debian4-64',
           'debian4',
           'debian5-64',

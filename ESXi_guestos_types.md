@@ -18,7 +18,7 @@ Darwin (mac):
 'darwin10-64','darwin10','darwin11-64','darwin11','darwin12-64','darwin13-64','darwin14-64','darwin15-64','darwin16-64','darwin-64','darwin'
 
 Debian:
-'debian10-64','debian10','debian4-64','debian4','debian5-64','debian5','debian6-64','debian6','debian7-64','debian7','debian8-64','debian8','debian9-64','debian9'
+'debian12-64','debian12','debian11-64','debian11','debian10-64','debian10','debian4-64','debian4','debian5-64','debian5','debian6-64','debian6','debian7-64','debian7','debian8-64','debian8','debian9-64','debian9'
 
 Dos & Other:
 'dos','os2','oes','other','sjds','coreos-64'
