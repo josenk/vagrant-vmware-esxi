@@ -38,6 +38,11 @@ module VagrantPlugins
         SnapshotInfo
       end
 
+      command('destroy-networks') do
+        require_relative "command/destroy_networks"
+        Command::DestroyNetworks
+      end
+
       # This initializes the internationalization strings.
       def self.setup_i18n
         require 'pathname'
@@ -66,7 +71,7 @@ module VagrantPlugins
         # Set the logging level on all "vagrant" namespaced
         # logs as long as we have a valid level.
         if level
-          logger = Log4r::Logger.new('vagrant_esxi')
+          logger = Log4r::Logger.new('vagrant_vmware_esxi')
           logger.outputters = Log4r::Outputter.stderr
           logger.level = level
           logger = nil
